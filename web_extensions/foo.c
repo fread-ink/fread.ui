@@ -1,4 +1,7 @@
 
+// https://cpp.hotexamples.com/site/file?hash=0x0a4695a29d6bc3cc7b9973e94f0661ee7e51fd4f1308b88cb5a6cc2f3aa2291c&fullName=main.c&project=macrat/rusk
+// https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebInspector.html
+// https://wiki.gnome.org/Projects/WebKitGtk/ProgrammingGuide/Cookbook
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
 // https://lists.webkit.org/pipermail/webkit-wpe/2019-June/000183.html
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
@@ -54,9 +57,9 @@ js_exception_handler(JSCContext   *context,
 }
 
 static void
-web_page_created_callback (WebKitWebExtension *extension,
-                           WebKitWebPage      *web_page,
-                           gpointer            user_data)
+web_page_created_callback(WebKitWebExtension *extension,
+                          WebKitWebPage      *web_page,
+                          gpointer            user_data)
 {
 
   WebKitFrame* frame;
@@ -70,22 +73,6 @@ web_page_created_callback (WebKitWebExtension *extension,
 	   webkit_web_page_get_id (web_page),
 	   webkit_web_page_get_uri (web_page));
 
-  /*
-  JSObjectRef globalObject = JSContextGetGlobalObject(globalContext);
-    
-  JSStringRef logFunctionName = JSStringCreateWithUTF8CString("log");
-  JSObjectRef functionObject = JSObjectMakeFunctionWithCallback(globalContext, logFunctionName, &ObjectCallAsFunctionCallback);
-        
-  JSObjectSetProperty(globalContext, globalObject, logFunctionName, functionObject, kJSPropertyAttributeNone, NULL);
-    
-  JSStringRef logCallStatement = JSStringCreateWithUTF8CString("log()");
-    
-  JSEvaluateScript(globalContext, logCallStatement, NULL, NULL, 1, NULL);
-    
-    
-  JSStringRelease(logFunctionName);
-  JSStringRelease(logCallStatement);
-  */
 }
 
 static void js_foo (const char *msg) {

@@ -280,19 +280,22 @@ WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.webview = webkit_web_view_new_with_user_content_manager(m);
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview),
                            webview_check_url(w->url));
+  
+  
   g_signal_connect(G_OBJECT(w->priv.webview), "load-changed",
                    G_CALLBACK(webview_load_changed_cb), w);
   gtk_container_add(GTK_CONTAINER(w->priv.scroller), w->priv.webview);
 
-  if (w->debug) {
-    WebKitSettings *settings =
-        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(w->priv.webview));
-    webkit_settings_set_enable_write_console_messages_to_stdout(settings, true);
-    webkit_settings_set_enable_developer_extras(settings, true);
-  } else {
-    g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
-                     G_CALLBACK(webview_context_menu_cb), w);
-  }
+  WebKitSettings *settings = webkit_web_view_get_settings (WEBKIT_WEB_VIEW(w->priv.webview));
+  g_object_set (G_OBJECT(settings), "enable-developer-extras", TRUE, NULL);
+  webkit_settings_set_enable_write_console_messages_to_stdout(settings, true);
+    
+
+  WebKitWebInspector *inspector = webkit_web_view_get_inspector (WEBKIT_WEB_VIEW(w->priv.webview));
+  webkit_web_inspector_show (WEBKIT_WEB_INSPECTOR(inspector));
+  
+  g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
+                   G_CALLBACK(webview_context_menu_cb), w);
 
   gtk_widget_show_all(w->priv.window);
 

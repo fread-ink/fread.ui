@@ -5,4 +5,4 @@ var Fread = {
 
 };
 
-alert("f");
+console.log("fread.js loaded");

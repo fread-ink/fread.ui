@@ -34,7 +34,7 @@ int main(int argc, const char** argv) {
 
   path = realpath(argv[0], NULL);
   dir_path = dirname(path);
-
+  
   g_signal_connect(webkit_web_context_get_default(),
                    "initialize-web-extensions",
                     G_CALLBACK(initialize_web_extensions),
@@ -42,7 +42,7 @@ int main(int argc, const char** argv) {
   
   /* Open wikipedia in a 800x600 resizable window */
   webview("Webview", argv[1], 800, 600, 1);
-
+  
   free(path);
   return 0;
 }

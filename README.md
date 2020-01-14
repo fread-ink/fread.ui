@@ -12,3 +12,13 @@ make
 ```
 ./main "https://en.wikipedia.org/"
 ```
+
+# ToDo
+
+* Filesystem `ls` function
+* Filesystem `ls` from inside zip file
+* Filesystem open html file from inside zip file
+* Filesystem read file into js memory from inside zip file (for epub metadata)
+* Inject all .js files in extension dir
+* JS for dynamically loading and unloading CSS from files
+* Command line argument for enabling developer console

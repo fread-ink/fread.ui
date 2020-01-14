@@ -5,13 +5,10 @@
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
 // https://lists.webkit.org/pipermail/webkit-wpe/2019-June/000183.html
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
-
-/*
-The epiphany built-in extension seems to be the only available example of the new API.
-
-*/
+// The epiphany built-in extension seems to be the only available example of the new API.
 
 #include <stdio.h>
+#include <errno.h>
 #include <glib-object.h>
 #include <webkit2/webkit-web-extension.h>
 #include <JavaScriptCore/JavaScript.h>
@@ -19,13 +16,6 @@ The epiphany built-in extension seems to be the only available example of the ne
 // relative to ./web_extensions/ dir
 // which is relative to the argv[0] path
 #define JS_FILE_PATH "fread.js"
-
-JSValueRef ObjectCallAsFunctionCallback(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
-
-  printf("Hello World");
-  return JSValueMakeUndefined(ctx);
-}
-
 
 void js_console_error(JSCContext *context, const char* msg) {
 
@@ -75,6 +65,53 @@ web_page_created_callback(WebKitWebExtension *extension,
 
 }
 
+JSCValue* js_ls(const char* path, JSCContext* js_context) {
+  GDir* dir = NULL;
+  const gchar* entry;
+  GPtrArray* garray;
+  JSCValue* entry_js;
+  JSCValue* ret = NULL;
+
+  dir = g_dir_open(path, 0, NULL);
+  if(!dir) {
+    // TODO return error to js caller
+    g_printerr("Failed to open directory: %s\n", path);
+    return NULL;
+  }
+
+  garray = g_ptr_array_new();
+
+  do {
+    entry = g_dir_read_name(dir);
+    if(!entry) {
+      break;
+    }
+    
+    entry_js = jsc_value_new_string(js_context, entry);
+      
+    g_ptr_array_add(garray, entry_js);
+
+    g_print("List: %s\n", entry);
+    
+  } while(entry);
+  
+  if(errno != EAGAIN) {
+    // TODO return error to js caller
+    g_printerr("Failed to list contents of directory: %s\n", path);
+    goto cleanup;
+  }
+
+  ret = jsc_value_new_array_from_garray(js_context, garray);
+  
+
+ cleanup:
+  // g_dir_close unallocates all the directory entry strings as well
+  g_dir_close(dir);
+  g_ptr_array_free(garray, FALSE);
+
+  return ret;
+}
+
 static void js_foo (const char *msg) {
   g_print("Foo said: %s\n", msg);
 }
@@ -109,6 +146,7 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   
   // open the fread.js file which contains the javascript code for this extension
   file = g_file_new_for_path(js_file_path);
+  // TODO maybe switch this to async IO?
   bytes = g_file_load_bytes(file, NULL, NULL, NULL);
   if(!data) {
     g_printerr("Error opening %s\n", JS_FILE_PATH);
@@ -122,16 +160,28 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   // as defined in the fread.js file
   js_fread = jsc_context_get_value(js_context, "Fread");
   
-  // define function `ls`
+  // define js function `_foo` on Fread object
   js_func = jsc_value_new_function(js_context,
-                                 "foo",
+                                 "_foo",
                                  G_CALLBACK(js_foo),
                                  NULL,
                                  NULL,
-                                 G_TYPE_NONE, 1,
+                                 G_TYPE_NONE,
+                                 1,
                                  G_TYPE_STRING);
-
-  jsc_value_object_set_property(js_fread, "ls", js_func);
+  jsc_value_object_set_property(js_fread, "_foo", js_func);
+  g_clear_object(&js_func);
+  
+  // define js function `_ls` on Fread object
+  js_func = jsc_value_new_function(js_context,
+                                 "_ls",
+                                 G_CALLBACK(js_ls),
+                                 js_context,
+                                 NULL,
+                                 JSC_TYPE_VALUE, // return type
+                                 1,
+                                 G_TYPE_STRING);
+  jsc_value_object_set_property(js_fread, "_ls", js_func);
   g_clear_object(&js_func);
   
 }

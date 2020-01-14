@@ -2,7 +2,6 @@
 // https://cpp.hotexamples.com/site/file?hash=0x0a4695a29d6bc3cc7b9973e94f0661ee7e51fd4f1308b88cb5a6cc2f3aa2291c&fullName=main.c&project=macrat/rusk
 // https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebInspector.html
 // https://wiki.gnome.org/Projects/WebKitGtk/ProgrammingGuide/Cookbook
-// https://webkitgtk.org/reference/jsc-glib/unstable/index.html
 // https://lists.webkit.org/pipermail/webkit-wpe/2019-June/000183.html
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
 // https://gist.github.com/mobius/1759816
@@ -15,6 +14,7 @@
 #include <webkit2/webkit-web-extension.h>
 #include <JavaScriptCore/JavaScript.h>
 #include <zip.h>
+#include <magic.h>
 
 // relative to ./web_extensions/ dir
 // which is relative to the argv[0] path
@@ -114,6 +114,45 @@ JSCValue* js_ls(const char* path, JSCContext* js_context) {
   return ret;
 }
 
+// use libmagic to get mimetype of file
+JSCValue* js_get_mimetype(const char* path, JSCContext* js_context) {
+  int ret;
+  magic_t cookie;
+  const char* mimetype;
+  JSCValue* ret_js;
+
+  if(!path) {
+    // TODO raise js error 
+    return NULL;
+  }
+  
+  cookie = magic_open(MAGIC_MIME_TYPE);
+  if(!cookie) {
+    // TODO raise js error
+    g_printerr("_get_mimetype open failed: %s\n", magic_error(cookie));
+    return NULL; 
+  }
+  
+  ret = magic_load(cookie, NULL); // load default magic database
+  if(ret != 0) {
+    // TODO raise js error
+    g_printerr("_get_mimetype load failed: %s\n", magic_error(cookie));
+    return NULL; 
+  }
+
+  mimetype = magic_file(cookie, path);
+  if(!mimetype) {
+    // TODO raise js error
+    g_printerr("_get_mimetype file read failed: %s\n", magic_error(cookie));
+    return NULL;
+  }
+  
+  ret_js = jsc_value_new_string(js_context, mimetype);
+
+  return ret_js;
+}
+
+
 // return js array with names of all entries in zip file
 // TODO test what happens with invalid path, access denied, etc.
 JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
@@ -192,7 +231,7 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   const gchar* js_file_path;
 
   ext_path = (const gchar*) ptr;
-  
+
   js_context = webkit_frame_get_js_context_for_script_world(frame, world);
 
   // define an exception handler for all exceptions that occur in js_context
@@ -204,8 +243,8 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   file = g_file_new_for_path(js_file_path);
   // TODO maybe switch this to async IO?
   bytes = g_file_load_bytes(file, NULL, NULL, NULL);
-  if(!data) {
-    g_printerr("Error opening %s\n", JS_FILE_PATH);
+  if(!bytes) {
+    g_printerr("Error opening %s\n", js_file_path);
     js_console_error(js_context, "Error opening the extension's js file");
     return;
   }
@@ -250,6 +289,18 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
                                  1,
                                  G_TYPE_STRING);
   jsc_value_object_set_property(js_fread, "_zip_ls", js_func);
+  g_clear_object(&js_func);
+
+  // define js function `_get_mimetype` on Fread object
+  js_func = jsc_value_new_function(js_context,
+                                 "_get_mimetype",
+                                 G_CALLBACK(js_get_mimetype),
+                                 js_context,
+                                 NULL,
+                                 JSC_TYPE_VALUE, // return type
+                                 1,
+                                 G_TYPE_STRING);
+  jsc_value_object_set_property(js_fread, "_get_mimetype", js_func);
   g_clear_object(&js_func);
   
 }

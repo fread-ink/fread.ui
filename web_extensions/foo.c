@@ -5,6 +5,8 @@
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
 // https://lists.webkit.org/pipermail/webkit-wpe/2019-June/000183.html
 // https://webkitgtk.org/reference/jsc-glib/unstable/index.html
+// https://gist.github.com/mobius/1759816
+//
 // The epiphany built-in extension seems to be the only available example of the new API.
 
 #include <stdio.h>
@@ -12,6 +14,7 @@
 #include <glib-object.h>
 #include <webkit2/webkit-web-extension.h>
 #include <JavaScriptCore/JavaScript.h>
+#include <zip.h>
 
 // relative to ./web_extensions/ dir
 // which is relative to the argv[0] path
@@ -65,6 +68,8 @@ web_page_created_callback(WebKitWebExtension *extension,
 
 }
 
+// return js array with names of all entries in specified directory
+// TODO test what happens with invalid path, access denied, etc.
 JSCValue* js_ls(const char* path, JSCContext* js_context) {
   GDir* dir = NULL;
   const gchar* entry;
@@ -90,8 +95,6 @@ JSCValue* js_ls(const char* path, JSCContext* js_context) {
     entry_js = jsc_value_new_string(js_context, entry);
       
     g_ptr_array_add(garray, entry_js);
-
-    g_print("List: %s\n", entry);
     
   } while(entry);
   
@@ -103,13 +106,66 @@ JSCValue* js_ls(const char* path, JSCContext* js_context) {
 
   ret = jsc_value_new_array_from_garray(js_context, garray);
   
-
  cleanup:
   // g_dir_close unallocates all the directory entry strings as well
   g_dir_close(dir);
   g_ptr_array_free(garray, FALSE);
 
   return ret;
+}
+
+// return js array with names of all entries in zip file
+// TODO test what happens with invalid path, access denied, etc.
+JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
+  GDir* dir = NULL;
+  const gchar* entry;
+  GPtrArray* garray;
+  JSCValue* entry_js;
+  JSCValue* js_ret = NULL;
+  struct zip* z;
+  int err;
+  char errbuf[200];
+  zip_int64_t num_entries;
+  struct zip_stat st;
+  int ret;
+  zip_uint64_t i;
+
+  z = zip_open(path, 0, &err);
+  if(!z) {
+    // TODO return error to js caller
+    zip_error_to_str(errbuf, sizeof(errbuf), err, errno);
+    g_printerr("Failed to open zip file %s : %s\n", path, errbuf);
+    return NULL;
+  }
+
+  num_entries = zip_get_num_entries(z, 0);
+  
+  garray = g_ptr_array_new();
+
+  for(i=0; i < num_entries; i++) {
+
+    ret = zip_stat_index(z, i, ZIP_FL_ENC_GUESS, &st);
+    // skip entries that fail to stat or don't have a valid name and size
+    if(ret != 0 || !(st.valid & (ZIP_STAT_NAME | ZIP_STAT_SIZE))) {
+      continue;
+    }
+    
+    entry_js = jsc_value_new_string(js_context, st.name);
+      
+    g_ptr_array_add(garray, entry_js);
+    
+  } while(entry);
+  
+  js_ret = jsc_value_new_array_from_garray(js_context, garray);
+  
+ cleanup:
+  g_ptr_array_free(garray, FALSE);
+  ret = zip_close(z);
+  if(ret !=0) {
+    // TODO handle this error
+  }
+
+  return js_ret;
 }
 
 static void js_foo (const char *msg) {
@@ -182,6 +238,18 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
                                  1,
                                  G_TYPE_STRING);
   jsc_value_object_set_property(js_fread, "_ls", js_func);
+  g_clear_object(&js_func);
+
+  // define js function `_zip_ls` on Fread object
+  js_func = jsc_value_new_function(js_context,
+                                 "_zip_ls",
+                                 G_CALLBACK(js_zip_ls),
+                                 js_context,
+                                 NULL,
+                                 JSC_TYPE_VALUE, // return type
+                                 1,
+                                 G_TYPE_STRING);
+  jsc_value_object_set_property(js_fread, "_zip_ls", js_func);
   g_clear_object(&js_func);
   
 }

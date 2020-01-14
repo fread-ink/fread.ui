@@ -2,7 +2,7 @@
 Just some personal experiments with WebKit2GTK / JavasScriptCore and Web Process Extensions.
 
 ```
-sudo apt install build-essential libwebkit2gtk-4.0-dev libjavascriptcoregtk-4.0-dev
+sudo apt install build-essential libwebkit2gtk-4.0-dev libjavascriptcoregtk-4.0-dev libzip-dev
 ```
 
 ```
@@ -15,7 +15,6 @@ make
 
 # ToDo
 
-* Filesystem `ls` function
 * Filesystem `ls` from inside zip file
 * Filesystem open html file from inside zip file
 * Filesystem read file into js memory from inside zip file (for epub metadata)

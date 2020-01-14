@@ -24,7 +24,19 @@ var Fread = {
   ls: function(path) {
     // TODO input sanity checking
 
+    // TODO sort output
+
     return this._ls;
+  },
+
+    
+  // list files inside zip file
+  zip_ls: function(path) {
+    // TODO input sanity checking
+
+    // TODO sort output
+    
+    return this._zip_ls(path);
   }
   
   

@@ -13,7 +13,9 @@ The epiphany built-in extension seems to be the only available example of the ne
 #include <webkit2/webkit-web-extension.h>
 #include <JavaScriptCore/JavaScript.h>
 
-#define JS_FILE_PATH "/home/juul/projects/fread/webkit/webview/web_extensions/fread.js"
+// relative to ./web_extensions/ dir
+// which is relative to the argv[0] path
+#define JS_FILE_PATH "fread.js"
 
 JSValueRef ObjectCallAsFunctionCallback(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
 
@@ -98,8 +100,6 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
 {
   JSCContext* js_context;
 
-  printf("AAAAAAAAAAAAAAAA b\n");
-  
   // about g_autoptr: https://blogs.gnome.org/desrt/2015/01/30/g_autoptr/
   g_autoptr (JSCValue) js_fread = NULL;
   g_autoptr (JSCValue) js_func = NULL;
@@ -108,14 +108,20 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   g_autoptr (GBytes) bytes = NULL;
   const char* data;
   gsize data_size;
+  const gchar* ext_path;
+  const gchar* js_file_path;
+
+  ext_path = (const gchar*) ptr;
   
   js_context = webkit_frame_get_js_context_for_script_world(frame, world);
 
   // define an exception handler for all exceptions that occur in js_context
   jsc_context_push_exception_handler(js_context, (JSCExceptionHandler) js_exception_handler, NULL, NULL);
 
+  js_file_path = g_build_filename((const gchar*) ext_path, JS_FILE_PATH, NULL);
+  
   // open the fread.js file which contains the javascript code for this extension
-  file = g_file_new_for_path(JS_FILE_PATH);
+  file = g_file_new_for_path(js_file_path);
   bytes = g_file_load_bytes(file, NULL, NULL, NULL);
   if(!data) {
     g_printerr("Error opening %s\n", JS_FILE_PATH);
@@ -147,14 +153,19 @@ G_MODULE_EXPORT void
 webkit_web_extension_initialize_with_user_data(WebKitWebExtension *extension,
                                                 GVariant          *user_data) {
 
-  WebKitScriptWorld *scriptWorld;
+  WebKitScriptWorld *script_world;
+  const gchar* path;
   
-  scriptWorld = webkit_script_world_get_default();
+  // TODO does g_variant_get_string malloc for us? it seems like it
+  g_variant_get(user_data, "ms", &path);
+  g_print("Extension running from path: %s\n", path);
   
-  g_signal_connect(scriptWorld,
+  script_world = webkit_script_world_get_default();
+  
+  g_signal_connect(script_world,
                    "window-object-cleared",
                    G_CALLBACK (window_object_cleared_cb),
-                   NULL);
+                   (void*) path);
   
   g_signal_connect(extension, "page-created", 
                    G_CALLBACK (web_page_created_callback), 

@@ -188,7 +188,8 @@ JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
     if(ret != 0 || !(st.valid & (ZIP_STAT_NAME | ZIP_STAT_SIZE))) {
       continue;
     }
-    
+
+    // TODO add file sizes
     entry_js = jsc_value_new_string(js_context, st.name);
       
     g_ptr_array_add(garray, entry_js);

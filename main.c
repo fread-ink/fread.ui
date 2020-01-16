@@ -115,22 +115,40 @@ static void uri_scheme_ebook_handler(GTask*        task,
                                      gpointer      task_data,
                                      GCancellable* cancellable) {
 
-  GString* g_path;
+  GString* g_uri;
+  char* uri;
+  size_t uri_len;
   GBytes* ret;
+  char* anchor;
   char* zipfile_path;
   char* compressed_path;
 
   // This is the data passed with g_task_set_task_data()
-  g_path = (GString*) task_data;
-  if(!g_path) return;
+  g_uri = (GString*) task_data;
+  if(!g_uri) return;
 
-  zipfile_path = g_path->str;
-  compressed_path = g_strstr_len(g_path->str, g_path->len, "//");
+  uri = g_uri_unescape_string(g_uri->str, NULL);
+  if(!uri) {
+    // TODO handle error
+    g_printerr("Unable to unescape URI\n");
+    return;
+  }
+
+  // strip anchor (if present)
+  uri_len = strlen(uri);
+  anchor = g_strstr_len(uri, uri_len, "#");
+  if(anchor) {
+    anchor[0] = '\0'; // terminate string at anchor
+    uri_len = strlen(uri);
+  }
+  
+  zipfile_path = uri;
+  compressed_path = g_strstr_len(uri, uri_len, "//");
   // if there was no "//" found or it was found at the very end of the string
-  if(!compressed_path || (compressed_path - zipfile_path >= g_path->len - 2)) {
+  if(!compressed_path || (compressed_path - zipfile_path >= uri_len - 2)) {
     // TODO imeplement this
     g_printerr("NOT IMPLEMENTED: Passing epub path with no //<compressed_file>\n");
-    return;
+    goto cleanup;
   }
 
   // change "//" to NULLs, with the first one acting
@@ -148,6 +166,8 @@ static void uri_scheme_ebook_handler(GTask*        task,
   g_task_return_pointer(task,
                         ret,
                         g_free);
+ cleanup:
+  g_free(uri);
 }
 
 
@@ -215,10 +235,6 @@ static gboolean uri_scheme_ebook_callback(WebKitURISchemeRequest *request,
   // This g_string is freed by uri_scheme_ebook_task_destroy()
   g_path = g_string_new(path);
   g_path = g_string_erase(g_path, 0, sizeof(EBOOK_URI_SCHEME_NAME) + 2);
-  
-  if (!g_strcmp0(g_path->str, "foo")) {
-    g_print("Foo accessed!\n");
-  }
 
   task = g_task_new(NULL, NULL,
                     (GAsyncReadyCallback) uri_scheme_ebook_handler_callback,
@@ -270,6 +286,13 @@ int main(int argc, const char** argv) {
 
   web_context = webkit_web_context_get_default();
 
+  // Reduce caching to reduce memory usage.
+  // We can also switch to WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER
+  // if we feel like we have the memory to spare.
+  // https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebContext.html#WebKitCacheModel
+  webkit_web_context_set_cache_model(web_context,
+                                     WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
+  
   // TODO check return value
   register_url_scheme(web_context);
   

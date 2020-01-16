@@ -305,6 +305,8 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   
 }
 
+
+
 G_MODULE_EXPORT void
 webkit_web_extension_initialize_with_user_data(WebKitWebExtension *extension,
                                                 GVariant          *user_data) {

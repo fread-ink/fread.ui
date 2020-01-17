@@ -1,4 +1,5 @@
 *~
 main
 web_extensions/libfoo.so
-
+app/static/build/**
+app/node_modules/**

@@ -1,0 +1,28 @@
+
+@import "../../node_modules/purecss/build/pure-min.css";
+@import "components/loading.scss";
+
+$white: rgba(220,220,220,1);
+
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background: rgba(0,0,0,1);
+    color: $white;
+}
+
+.noselect {
+  -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+}
+
+h1 {
+    text-align: center;
+    margin: 5px 0 10px 0;
+    font-size: 1.2em;
+}
+

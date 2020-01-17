@@ -10,6 +10,7 @@ window.app = app;
 
 function renderAll() {
   var container = document.getElementById('container');
+  container.innerHTML = '';
   
   render((
     <Root />

@@ -9,13 +9,18 @@
 #define EBOOK_URI_SCHEME_NAME "ebook"
 
 // relative to location of binary (as specified by argv[0])
-#define WEB_EXTENSIONS_DIR "web_extensions"
+#define WEB_EXTENSIONS_RELATIVE_PATH "web_extensions"
+
+#define WEB_APP_RELATIVE_PATH "app/static"
+#define WEB_APP_MAIN_FILE "index.html"
+
+char* working_dir_path; // set to dir containing binary by main()
 
 static void initialize_web_extensions(WebKitWebContext *context, gpointer user_data) {
   const gchar* ext_dir;
   GVariant* ext_dir_v = NULL;
 
-  ext_dir = g_build_filename((const gchar*) user_data, WEB_EXTENSIONS_DIR, NULL);
+  ext_dir = g_build_filename((const gchar*) user_data, WEB_EXTENSIONS_RELATIVE_PATH, NULL);
   
   // create a "Maybe String" type variant
   // https://developer.gnome.org/glib/stable/gvariant-format-strings.html
@@ -27,7 +32,25 @@ static void initialize_web_extensions(WebKitWebContext *context, gpointer user_d
 }
 
 // This runs asynchronously so blocking calls are safe
-GBytes* uri_scheme_ebook_get_data(char* zipfile_path, char* compressed_path) {
+GBytes* uri_scheme_ebook_load_file(const char* path) {
+
+  GBytes* bytes;
+  g_autoptr (GFile) file = NULL;
+  
+  file = g_file_new_for_path(path);
+  
+  bytes = g_file_load_bytes(file, NULL, NULL, NULL);
+  if(!bytes) {
+    // TODO proper error handling
+    g_printerr("Error opening %s\n", path);
+    return NULL;
+  }
+  
+  return bytes;
+}
+
+// This runs asynchronously so blocking calls are safe
+GBytes* uri_scheme_ebook_load_file_zip(char* zipfile_path, char* compressed_path) {
 
   struct zip* z;
   zip_file_t* zf;
@@ -122,6 +145,7 @@ static void uri_scheme_ebook_handler(GTask*        task,
   char* anchor;
   char* zipfile_path;
   char* compressed_path;
+  char* web_app_path;
 
   // This is the data passed with g_task_set_task_data()
   g_uri = (GString*) task_data;
@@ -141,27 +165,51 @@ static void uri_scheme_ebook_handler(GTask*        task,
     anchor[0] = '\0'; // terminate string at anchor
     uri_len = strlen(uri);
   }
-  
-  zipfile_path = uri;
-  compressed_path = g_strstr_len(uri, uri_len, "//");
-  // if there was no "//" found or it was found at the very end of the string
-  if(!compressed_path || (compressed_path - zipfile_path >= uri_len - 2)) {
-    // TODO imeplement this
-    g_printerr("NOT IMPLEMENTED: Passing epub path with no //<compressed_file>\n");
-    goto cleanup;
-  }
+ 
+  // If this is a relative path
+  if(uri[0] != '/') {
+    
+    // Load relative files from web app dir
+    web_app_path = g_strconcat(working_dir_path, "/", WEB_APP_RELATIVE_PATH, "/", uri, NULL);
+    
+    ret = uri_scheme_ebook_load_file(web_app_path);    
+    // TODO check return value
+    
+    free(web_app_path);
+    
+  } else { // this is an absolute path
 
-  // change "//" to NULLs, with the first one acting
-  // as null terminator for the first part of the string
-  compressed_path[0] = '\0';
-  compressed_path[1] = '\0';
-  // Advance the compressed_path pointer to right after the "//"
-  compressed_path += 2;
+    zipfile_path = uri;
+    
+    // Check for the // that separates the epub file path
+    // and the path inside of the zip/epub file
+    // e.g. /this/is/an/ebook.epub//Chapter1.htm
+    compressed_path = g_strstr_len(uri, uri_len, "//");
   
-  // TODO check if zipfile_path is a file or directory
-  // and check the mimetype
+    // if there was no "//" found or it was found at the very end of the string
+    if(!compressed_path || (compressed_path - zipfile_path >= uri_len - 2)) {
+
+      // Load the web app instead
+      web_app_path = g_strconcat(working_dir_path, "/", WEB_APP_RELATIVE_PATH, "/", WEB_APP_MAIN_FILE, NULL);
+      ret = uri_scheme_ebook_load_file(web_app_path);
+      // TODO check return value
+      free(web_app_path);
+    
+    } else {
+
+      // change "//" to NULLs, with the first one acting
+      // as null terminator for the first part of the string
+      compressed_path[0] = '\0';
+      compressed_path[1] = '\0';
+      // Advance the compressed_path pointer to right after the "//"
+      compressed_path += 2;
   
-  ret = uri_scheme_ebook_get_data(zipfile_path, compressed_path);
+      // TODO check if zipfile_path is a file or directory
+      // and check the mimetype
+  
+      ret = uri_scheme_ebook_load_file_zip(zipfile_path, compressed_path);
+    }
+  }
   
   g_task_return_pointer(task,
                         ret,
@@ -187,7 +235,7 @@ uri_scheme_book_handler_done(WebKitURISchemeRequest *request,
   g_object_unref(stream);
 }
 
-
+// called when async task is done
 static void uri_scheme_ebook_handler_callback(void*                  *user_data,
                                               GAsyncResult           *result,
                                               WebKitURISchemeRequest *request) {
@@ -198,6 +246,7 @@ static void uri_scheme_ebook_handler_callback(void*                  *user_data,
   res = g_task_propagate_pointer(G_TASK(result), NULL);
 
   if(!res) {
+    // TODO
     str = g_string_new ("<html><body>");
     g_string_append_printf(str, "Unknown error");
     g_string_append(str, "</body></html>");
@@ -250,19 +299,31 @@ static gboolean uri_scheme_ebook_callback(WebKitURISchemeRequest *request,
   return TRUE;
 }
 
-int register_url_scheme(WebKitWebContext* web_context) {
+// TODO unused
+// redirect to the built in web app, passing it the previous URI
+int redirect_to_app(WebKitURISchemeRequest *request) {
+  g_autofree char* uri;
 
-  const char user_data[] = "test";
+  // TODO error handling
+  
+  uri = g_strconcat("app://", "/", NULL);
+  webkit_web_view_load_uri(webkit_uri_scheme_request_get_web_view(request), uri);
+  
+  g_object_unref(request);
+  return 0;
+}
 
+int register_uri_scheme(WebKitWebContext* web_context) {
+
+  const char foo[] = "test data";
   
   webkit_web_context_register_uri_scheme(web_context,
                                          EBOOK_URI_SCHEME_NAME,
                                          (WebKitURISchemeRequestCallback) uri_scheme_ebook_callback,
-                                         (void*) user_data, NULL);
+                                         (void*) foo, NULL);
 
   webkit_security_manager_register_uri_scheme_as_no_access(webkit_web_context_get_security_manager(web_context),
                                                            EBOOK_URI_SCHEME_NAME);
-
 
   return 0;
 }
@@ -272,7 +333,6 @@ int main(int argc, const char** argv) {
 
   WebKitWebContext* web_context;
   char* path; // path to this binary
-  char* dir_path; // working dir
 
   // TODO check if argv[0] is set
   
@@ -282,7 +342,7 @@ int main(int argc, const char** argv) {
   }
 
   path = realpath(argv[0], NULL);
-  dir_path = dirname(path);
+  working_dir_path = dirname(path);
 
   web_context = webkit_web_context_get_default();
 
@@ -294,12 +354,12 @@ int main(int argc, const char** argv) {
                                      WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
   
   // TODO check return value
-  register_url_scheme(web_context);
+  register_uri_scheme(web_context);
   
   g_signal_connect(web_context,
                    "initialize-web-extensions",
                     G_CALLBACK(initialize_web_extensions),
-                   (void*) dir_path);
+                   (void*) working_dir_path);
   
   /* Open wikipedia in a 800x600 resizable window */
   webview("Webview", argv[1], 800, 600, 1);

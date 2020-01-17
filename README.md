@@ -58,8 +58,8 @@ man libmagic
 
 # ToDo
 
-* Check MuPDF API for viability
-* Make a way to open files async directly from js
+* Write code to generate thumbnails and database of ebooks (IndexedDB?)
+* Add configurable keyboard hotkeys for back, forward, home and menu
 * Change existing js filesystem functions to async
 
 ## Book browser

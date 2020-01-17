@@ -157,7 +157,6 @@ JSCValue* js_get_mimetype(const char* path, JSCContext* js_context) {
 // TODO test what happens with invalid path, access denied, etc.
 JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
   GDir* dir = NULL;
-  const gchar* entry;
   GPtrArray* garray;
   JSCValue* entry_js;
   JSCValue* js_ret = NULL;
@@ -180,7 +179,7 @@ JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
   num_entries = zip_get_num_entries(z, 0);
   
   garray = g_ptr_array_new();
-
+  
   for(i=0; i < num_entries; i++) {
 
     ret = zip_stat_index(z, i, ZIP_FL_ENC_GUESS, &st);
@@ -194,7 +193,7 @@ JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
       
     g_ptr_array_add(garray, entry_js);
     
-  } while(entry);
+  }
   
   js_ret = jsc_value_new_array_from_garray(js_context, garray);
   
@@ -208,8 +207,8 @@ JSCValue* js_zip_ls(const char* path, JSCContext* js_context) {
   return js_ret;
 }
 
-static void js_foo (const char *msg) {
-  g_print("Foo said: %s\n", msg);
+static void js_print (const char *msg) {
+  g_print("%s\n", msg);
 }
 
 static void
@@ -258,14 +257,14 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
   
   // define js function `_foo` on Fread object
   js_func = jsc_value_new_function(js_context,
-                                 "_foo",
-                                 G_CALLBACK(js_foo),
+                                 "print",
+                                 G_CALLBACK(js_print),
                                  NULL,
                                  NULL,
                                  G_TYPE_NONE,
                                  1,
                                  G_TYPE_STRING);
-  jsc_value_object_set_property(js_fread, "_foo", js_func);
+  jsc_value_object_set_property(js_fread, "print", js_func);
   g_clear_object(&js_func);
   
   // define js function `_ls` on Fread object

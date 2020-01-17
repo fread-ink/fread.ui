@@ -58,8 +58,9 @@ man libmagic
 
 # ToDo
 
+* Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
+* Show book front page when web app loads an epub
 * Write code to generate thumbnails and database of ebooks (IndexedDB?)
-* Add configurable keyboard hotkeys for back, forward, home and menu
 * Change existing js filesystem functions to async
 
 ## Book browser

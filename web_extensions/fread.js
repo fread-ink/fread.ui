@@ -49,7 +49,9 @@ var Fread = {
 
     var files = this.zip_ls(path);
 
-    // TODO open and parse epub metadata
+    // TODO parse metadata
+    
+    return files;
   }
   
   

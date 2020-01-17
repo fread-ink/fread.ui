@@ -328,6 +328,22 @@ int register_uri_scheme(WebKitWebContext* web_context) {
   return 0;
 }
 
+/*
+int toggle_developer_console(gboolean is_on) {
+  
+  WebKitSettings *settings = webkit_web_view_get_settings (WEBKIT_WEB_VIEW(w->priv.webview));
+  
+  g_object_set(G_OBJECT(settings), "enable-developer-extras", is_on, NULL);
+  webkit_settings_set_enable_write_console_messages_to_stdout(settings, true);
+    
+  WebKitWebInspector *inspector = webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(w->priv.webview));
+  
+  if(is_on == TRUE) {
+    webkit_web_inspector_show(WEBKIT_WEB_INSPECTOR(inspector));
+  }
+
+}
+*/
 
 int main(int argc, const char** argv) {
 
@@ -344,6 +360,7 @@ int main(int argc, const char** argv) {
   path = realpath(argv[0], NULL);
   working_dir_path = dirname(path);
 
+  // TODO can we really do this before instantiating the web view?
   web_context = webkit_web_context_get_default();
 
   // Reduce caching to reduce memory usage.

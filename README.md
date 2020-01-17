@@ -1,13 +1,32 @@
 
 Just some personal experiments with WebKit2GTK / JavasScriptCore and Web Process Extensions.
 
+# Installing dependencies
+
 ```
 sudo apt install build-essential libwebkit2gtk-4.0-dev libjavascriptcoregtk-4.0-dev libzip-dev libmagic-dev
 ```
 
+# Building
+
 ```
 make
 ```
+
+# Building the web app
+
+Ensure you have a recent node.js (only necessary for building), then:
+
+```
+cd app/
+npm install
+npm run build-css
+npm run build
+```
+
+For more info on developing the web app see `app/README.md`.
+
+# Running
 
 ```
 ./main "https://en.wikipedia.org/"

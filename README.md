@@ -29,7 +29,7 @@ For more info on developing the web app see `app/README.md`.
 # Running
 
 ```
-./main "https://en.wikipedia.org/"
+./main "ebook:///path/to/book.epub"
 ```
 
 # APIs and manuals
@@ -60,9 +60,20 @@ man libmagic
 
 * Get rid of webview.h
 * Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
-* Show book front page when web app loads an epub
-* Write code to generate thumbnails and database of ebooks (IndexedDB?)
-* Change existing js filesystem functions to async
+* Command line options
+* Implement .opf parsing and rendering
+* Implement CFI parsing and link following
+* Show front page of books
+* Write code to generate/refresh thumbnails and database of ebooks (IndexedDB?)
+* Change existing jsc filesystem functions to async
+
+## Slide-down menu
+
+* Add/remove bookmark
+* Show bookmarks
+* Theme (switch css file)
+* Font size up/down
+* Toggle dark mode
 
 ## Book browser
 
@@ -71,25 +82,12 @@ Features:
 * Thumbnail view
 * List view
 * Order by: Title, Author, Filename, Date changed, Date published
+* Search
 
-Two options here: Implement browsing as URL scheme or implement via js. If implementing via URL scheme then we don't get to use js for anything. Parsing the XML and XHTML metadata would be a lot simpler using js. The solutions is probably to use the custom scheme for accessing files inside of zip files (to avoid passing them through JS land). The custom URL scheme can also handle EPUB CFI.
+## Settings page
 
-Browsing process: For each book dir:
 
-* List all files in dir
-* Check mimetype using libmagic to filter for files we understand
-* Use JS to 
-* (or if it's faster just call functions directly from js. do some tests)
-* (maybe create a separate URI handler for thumbnail scaledown?)
-
-## url scheme handler
-
-It looks like the right way to implement epub reading is to register a URI scheme but unfortunately we can't alter WebKit settings on a per-URI-scheme basis so we will have to switch to a "epub reading mode" when an epub:// URI is accessed. I'm not sure how we'll handle switching back again.
-
-Example epub URI:
-
-```
-ebook:///path/to/my/ebook.epub//Chapter1.html#markup
+## Misc
 
 In epub mode we should disable [enable-javascript-markup](https://webkitgtk.org/reference/webkit2gtk/stable/WebKitSettings.html#WebKitSettings--enable-javascript-markup) but not disable javascript since that would prevent our own javascript for epub parsing from running.
 
@@ -124,14 +122,6 @@ Enable in dev mode only:
 Other interesting settings:
 
 * enable-spatial-navigation (keyboard up-down-left-right navigation)
-
-## Misc
-
-* Load web app from filesystem
-* Read file into js memory from inside zip file (for epub metadata)
-* Inject all .js files in extension dir
-* JS for dynamically loading and unloading CSS from files
-* Command line argument for enabling developer console
 
 # Memory usage
 

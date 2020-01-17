@@ -58,6 +58,7 @@ man libmagic
 
 # ToDo
 
+* Get rid of webview.h
 * Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
 * Show book front page when web app loads an epub
 * Write code to generate thumbnails and database of ebooks (IndexedDB?)

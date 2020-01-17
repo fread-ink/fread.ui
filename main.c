@@ -322,9 +322,10 @@ int register_uri_scheme(WebKitWebContext* web_context) {
                                          (WebKitURISchemeRequestCallback) uri_scheme_ebook_callback,
                                          (void*) foo, NULL);
 
-  webkit_security_manager_register_uri_scheme_as_no_access(webkit_web_context_get_security_manager(web_context),
-                                                           EBOOK_URI_SCHEME_NAME);
 
+  // Don't allow pages in this URI scheme to anything outside of this URI scheme
+  webkit_security_manager_register_uri_scheme_as_display_isolated(webkit_web_context_get_security_manager(web_context), EBOOK_URI_SCHEME_NAME);
+  
   return 0;
 }
 

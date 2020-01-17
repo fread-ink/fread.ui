@@ -249,7 +249,8 @@ window_object_cleared_cb(WebKitScriptWorld       *world,
     return;
   }
   data = (const char*) g_bytes_get_data(bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri(js_context, data, data_size, "resource:///org/fread/fread-extension/js/fread.js", 1);
+  // TODO reference global define for "ebook://local" name
+  result = jsc_context_evaluate_with_source_uri(js_context, data, data_size, "ebook://home/fread.js", 1);
   
   // get the Fread global js object
   // as defined in the fread.js file

@@ -433,7 +433,7 @@ int main(int argc, char** argv) {
 
   gboolean verbose = FALSE;  
   GOptionEntry entries[] = {
-    { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print js console message to stdout", NULL },
+    { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print js console messages to stdout", NULL },
     { NULL }
   };
   
@@ -467,7 +467,6 @@ int main(int argc, char** argv) {
   }
 
   web_view = webkit_web_view_new_with_settings(settings);
-
   web_context = webkit_web_view_get_context(WEBKIT_WEB_VIEW(web_view));
 
   // Reduce caching to reduce memory usage.
@@ -507,7 +506,7 @@ int main(int argc, char** argv) {
   g_signal_connect(G_OBJECT(scrolled_window), "key_press_event", G_CALLBACK(on_key_press), web_view);
 
   // Scrolled_window doesn't receive arrow key events
-  // but if we only bind to window we get called twice for
+  // but if we only bind to window we get called twice for each key press
   g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK(on_key_press_arrow), web_view);
 
   while(keep_running) {

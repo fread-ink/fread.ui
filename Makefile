@@ -1,12 +1,12 @@
 
-all: main extension
+all: fread.ui extension
 
-main: main.c webview.h
-	gcc main.c -o main -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0 libzip`
+fread.ui: main.c webview.h
+	gcc main.c -o fread.ui -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0 libzip`
 
-extension: web_extensions/foo.c
-	gcc -shared -fPIC -o web_extensions/libfoo.so web_extensions/foo.c `pkg-config --cflags --libs webkit2gtk-4.0 javascriptcoregtk-4.0 libzip` -lmagic
+extension: web_extensions/fread.c
+	gcc -shared -fPIC -o web_extensions/fread.so web_extensions/fread.c `pkg-config --cflags --libs webkit2gtk-4.0 javascriptcoregtk-4.0 libzip` -lmagic
 
 clean:
-	rm -f main web_extension/libfoo.so
+	rm -f fread.ui web_extension/libfread.so
 

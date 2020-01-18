@@ -1,5 +1,5 @@
 
-A work-in-progress ebook reader, web browser and primary UI for ebook reader devices with electronic paper displays.
+fread.ui is work-in-progress ebook reader, web browser and primary UI for the [fread.ink](https://fread.ink) GNU/Linux distro for e-paper devices.
 
 Aims to keep a relatively low memory footprint (~50 MB of non-file-backed memory) while providing all the advanced text rendering options expected of a modern web browser (using webkit).
 
@@ -35,7 +35,7 @@ For more info on developing the web app see `app/README.md`.
 # Running
 
 ```
-./main "ebook:///path/to/book.epub"
+./fread.ui "ebook:///path/to/book.epub"
 ```
 
 # Keyboard shortcuts
@@ -74,7 +74,7 @@ man libmagic
 * Implement .opf parsing and rendering
 * Implement CFI parsing and link following
 * Show front page of books
-* Book pagination
+* Pagination
 * Configuration file for setting keyboard shortcuts
 * Change existing jsc filesystem functions to async
 * Add setting to let user enable: process-swap-on-cross-site-navigation-enabled

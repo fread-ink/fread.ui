@@ -2,6 +2,7 @@
 #include <libgen.h>
 #include <zip.h>
 #include <errno.h>
+#include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
@@ -330,18 +331,24 @@ int register_uri_scheme(WebKitWebContext* web_context) {
   return 0;
 }
 
-void toggle_developer_console(WebKitWebView* web_view, gboolean is_on) {
+void toggle_developer_console(WebKitWebView* web_view) {
   
   WebKitWebInspector *inspector;
   WebKitSettings *settings;
+  gboolean is_on;
 
   settings = webkit_web_view_get_settings(web_view);
+  
+  is_on = webkit_settings_get_enable_developer_extras(settings);
+  is_on = !is_on;
+  
   webkit_settings_set_enable_developer_extras(settings, is_on);
-  webkit_settings_set_enable_write_console_messages_to_stdout(settings, is_on);
   inspector = webkit_web_view_get_inspector(web_view);
   
   if(is_on == TRUE) {
     webkit_web_inspector_show(inspector);
+  } else {
+    webkit_web_inspector_close(inspector);
   }
 }
 
@@ -364,6 +371,28 @@ static void webview_destroy_cb(GtkWidget *widget, gpointer arg) {
   gboolean* keep_running = (gboolean*) arg;
 
   *keep_running = FALSE;
+}
+
+gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+
+  if(event->state & GDK_SHIFT_MASK) {
+    //		printf("SHIFT pressed\n");
+	} else if (event->state & GDK_CONTROL_MASK) {
+    //		printf("CTRL pressed\n");
+	}
+
+  // values defined in gdk/gdkkeysyms.h
+  switch(event->keyval) {
+    case 'q':
+      printf("key pressed: q\n");      
+      break;
+    case GDK_KEY_F12:
+      toggle_developer_console(WEBKIT_WEB_VIEW(user_data));
+      break;
+    
+  }
+
+  return FALSE;
 }
 
 int main(int argc, char** argv) {
@@ -393,7 +422,7 @@ int main(int argc, char** argv) {
   }
 
   settings = webkit_settings_new();
-  webkit_settings_set_enable_developer_extras(settings, TRUE);
+  // TODO only if -d is given
   webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
 
   web_view = webkit_web_view_new_with_settings(settings);
@@ -433,8 +462,8 @@ int main(int argc, char** argv) {
 
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view),
                            argv[1]);
-  
-  toggle_developer_console(WEBKIT_WEB_VIEW(web_view), TRUE);
+
+  g_signal_connect(G_OBJECT(scrolled_window), "key_press_event", G_CALLBACK(on_key_press), web_view);
 
   while(keep_running) {
     gtk_main_iteration_do(1);

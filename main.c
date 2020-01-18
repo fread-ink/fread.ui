@@ -2,7 +2,8 @@
 #include <libgen.h>
 #include <zip.h>
 #include <errno.h>
-#include "webview.h"
+#include <gtk/gtk.h>
+#include <webkit2/webkit2.h>
 
 // The name used for the URI scheme.
 // If this is "ebook" then the URI scheme will be ebook://
@@ -346,6 +347,98 @@ int toggle_developer_console(gboolean is_on) {
 }
 */
 
+
+// Switch the injected CSS style sheet for the web view
+// or disable the current injected style sheet if stylesheet is NULL
+void switch_user_style_sheet(WebKitWebView* web_view,
+                             WebKitUserStyleSheet* stylesheet) {
+
+  WebKitUserContentManager* manager;
+  
+  manager = webkit_web_view_get_user_content_manager(web_view);
+  webkit_user_content_manager_remove_all_style_sheets(manager);
+  
+  if(stylesheet) {
+    webkit_user_content_manager_add_style_sheet(manager, stylesheet);
+  }
+}
+
+int main(int argc, char** argv) {
+
+  GtkWidget *window;
+  GtkWidget *scrolled_window;
+  GtkWidget* web_view;
+  WebKitWebContext* web_context;
+  char* path; // path to this binary
+  WebKitSettings* settings;
+  gboolean ret;
+  gboolean keep_running = TRUE;
+
+  // TODO check if argv[0] is set
+  
+  if(argc < 2) {
+    fprintf(stderr, "Usage: %s <url>\n", argv[0]);
+    return 1;
+  }
+
+  path = realpath(argv[0], NULL);
+  working_dir_path = dirname(path);
+
+  ret = gtk_init_check(&argc, &argv);
+  if(ret == FALSE) {
+    g_printerr("Failed to initialize GTK\n");
+    return 1;
+  }
+
+  settings = webkit_settings_new();
+  webkit_settings_set_enable_developer_extras(settings, TRUE);
+  webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
+
+  web_view = webkit_web_view_new_with_settings(settings);
+
+  web_context = webkit_web_view_get_context(WEBKIT_WEB_VIEW(web_view));
+
+  // Reduce caching to reduce memory usage.
+  // We can also switch to WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER
+  // if we feel like we have the memory to spare.
+  // https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebContext.html#WebKitCacheModel
+  webkit_web_context_set_cache_model(web_context,
+                                     WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
+  
+  // TODO check return value
+  register_uri_scheme(web_context);
+  
+  g_signal_connect(web_context,
+                   "initialize-web-extensions",
+                    G_CALLBACK(initialize_web_extensions),
+                   (void*) working_dir_path);
+  
+
+
+  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
+  gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
+
+  scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(window), scrolled_window);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), web_view);
+  
+  gtk_widget_show_all(window);
+
+  webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view),
+                           argv[1]);
+  
+  while(keep_running) {
+    gtk_main_iteration_do(1);
+  }
+  
+  free(path);
+  return 0;
+}
+
+
+/*
 int main(int argc, const char** argv) {
 
   WebKitWebContext* web_context;
@@ -379,9 +472,11 @@ int main(int argc, const char** argv) {
                     G_CALLBACK(initialize_web_extensions),
                    (void*) working_dir_path);
   
-  /* Open wikipedia in a 800x600 resizable window */
+  // Open wikipedia in a 800x600 resizable window 
   webview("Webview", argv[1], 800, 600, 1);
   
   free(path);
   return 0;
 }
+
+*/

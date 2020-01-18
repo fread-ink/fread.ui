@@ -1,5 +1,11 @@
 
-Just some personal experiments with WebKit2GTK / JavasScriptCore and Web Process Extensions.
+A work-in-progress ebook reader, web browser and primary UI for ebook reader devices with electronic paper displays.
+
+Aims to keep a relatively low memory footprint (~50 MB of non-file-backed memory).
+
+So far supports no ebook formats with EPUB 3.0.1 support in progress.
+
+This project is based on WebKit2GTK and JavaScriptCore.
 
 # Installing dependencies
 
@@ -61,11 +67,13 @@ man libmagic
 * Get rid of webview.h
 * Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
 * Command line options
+* Add toggle for built-in webkit dark mode
 * Implement .opf parsing and rendering
 * Implement CFI parsing and link following
 * Show front page of books
 * Write code to generate/refresh thumbnails and database of ebooks (IndexedDB?)
 * Change existing jsc filesystem functions to async
+* Add setting to let user enable: process-swap-on-cross-site-navigation-enabled
 
 ## Slide-down menu
 

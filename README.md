@@ -64,7 +64,6 @@ man libmagic
 
 # ToDo
 
-* Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
 * Command line options
 * Implement .opf parsing and rendering
 * Implement CFI parsing and link following

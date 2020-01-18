@@ -375,25 +375,49 @@ static void webview_destroy_cb(GtkWidget *widget, gpointer arg) {
 
 gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
 
-  if(event->state & GDK_SHIFT_MASK) {
-    //		printf("SHIFT pressed\n");
-	} else if (event->state & GDK_CONTROL_MASK) {
-    //		printf("CTRL pressed\n");
-	}
+  WebKitWebView* web_view;
+
+  web_view = WEBKIT_WEB_VIEW(user_data);
 
   // values defined in gdk/gdkkeysyms.h
   switch(event->keyval) {
-    case 'q':
-      printf("key pressed: q\n");      
+    case 'r':
+      if(event->state & GDK_CONTROL_MASK) { // ctrl-r
+        webkit_web_view_reload(web_view);
+      }
       break;
     case GDK_KEY_F12:
-      toggle_developer_console(WEBKIT_WEB_VIEW(user_data));
+      toggle_developer_console(web_view);
       break;
     
   }
 
   return FALSE;
 }
+
+gboolean on_key_press_arrow(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+
+  WebKitWebView* web_view;
+
+  web_view = WEBKIT_WEB_VIEW(user_data);
+  
+  // values defined in gdk/gdkkeysyms.h
+  switch(event->keyval) {
+    case GDK_KEY_Left:
+      if(event->state & GDK_MOD1_MASK) { // alt-left
+        webkit_web_view_go_back(web_view);
+      }
+      break;
+    case GDK_KEY_Right:
+      if(event->state & GDK_MOD1_MASK) { // alt-right
+        webkit_web_view_go_forward(web_view);
+      }
+      break;    
+  }
+
+  return FALSE;
+}
+
 
 int main(int argc, char** argv) {
 
@@ -462,8 +486,12 @@ int main(int argc, char** argv) {
 
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view),
                            argv[1]);
-
+  
   g_signal_connect(G_OBJECT(scrolled_window), "key_press_event", G_CALLBACK(on_key_press), web_view);
+
+  // Scrolled_window doesn't receive arrow key events
+  // but if we only bind to window we get called twice for
+  g_signal_connect(G_OBJECT(window), "key_press_event", G_CALLBACK(on_key_press_arrow), web_view);
 
   while(keep_running) {
     gtk_main_iteration_do(1);

@@ -418,9 +418,10 @@ gboolean on_key_press_arrow(GtkWidget *widget, GdkEventKey *event, gpointer user
   return FALSE;
 }
 
-
 int main(int argc, char** argv) {
 
+  GError *error = NULL;
+  GOptionContext *opt_context; 
   GtkWidget *window;
   GtkWidget *scrolled_window;
   GtkWidget* web_view;
@@ -430,12 +431,26 @@ int main(int argc, char** argv) {
   gboolean ret;
   gboolean keep_running = TRUE;
 
+  gboolean verbose = FALSE;  
+  GOptionEntry entries[] = {
+    { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print js console message to stdout", NULL },
+    { NULL }
+  };
+  
+  opt_context = g_option_context_new("<uri>");
+  g_option_context_add_main_entries(opt_context, entries, NULL);
+  g_option_context_add_group(opt_context, gtk_get_option_group(TRUE));
+  if(!g_option_context_parse(opt_context, &argc, &argv, &error)) {
+    g_print("Option parsing failed: %s\n", error->message);
+    exit(1);
+  }
+  
   // TODO check if argv[0] is set
   if(argc < 2) {
     fprintf(stderr, "Usage: %s <url>\n", argv[0]);
     return 1;
   }
-
+  
   path = realpath(argv[0], NULL);
   working_dir_path = dirname(path);
 
@@ -446,8 +461,10 @@ int main(int argc, char** argv) {
   }
 
   settings = webkit_settings_new();
-  // TODO only if -d is given
-  webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
+
+  if(verbose) {
+    webkit_settings_set_enable_write_console_messages_to_stdout(settings, TRUE);
+  }
 
   web_view = webkit_web_view_new_with_settings(settings);
 

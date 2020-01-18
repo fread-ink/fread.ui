@@ -38,6 +38,13 @@ For more info on developing the web app see `app/README.md`.
 ./main "ebook:///path/to/book.epub"
 ```
 
+# Keyboard shortcuts
+
+* Toggle developer console: F12
+* Reload page: ctrl-r
+* Navigate back: alt-left
+* Navigate forward: alt-right
+
 # APIs and manuals
 
 ## WebKit2GTK
@@ -64,27 +71,28 @@ man libmagic
 
 # ToDo
 
-* Command line options
 * Implement .opf parsing and rendering
 * Implement CFI parsing and link following
 * Show front page of books
-* Write code to generate/refresh thumbnails and database of ebooks (IndexedDB?)
+* Book pagination
+* Configuration file for setting keyboard shortcuts
 * Change existing jsc filesystem functions to async
 * Add setting to let user enable: process-swap-on-cross-site-navigation-enabled
-* Add setting to let user enable built-in webkit dark mode
+* Unit testing
 
-## Slide-down menu
+## Top menu
 
 * Add/remove bookmark
 * Show bookmarks
 * Theme (switch css file)
 * Font size up/down
-* Toggle dark mode
+* Toggle dark mode (webkit has a built-in dark mode)
 
 ## Book browser
 
 Features:
 
+* Write code to generate/refresh thumbnails and database of ebooks (IndexedDB?)
 * Thumbnail view
 * List view
 * Order by: Title, Author, Filename, Date changed, Date published

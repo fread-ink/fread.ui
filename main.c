@@ -363,6 +363,12 @@ void switch_user_style_sheet(WebKitWebView* web_view,
   }
 }
 
+static void webview_destroy_cb(GtkWidget *widget, gpointer arg) {
+  gboolean* keep_running = (gboolean*) arg;
+
+  *keep_running = FALSE;
+}
+
 int main(int argc, char** argv) {
 
   GtkWidget *window;
@@ -413,16 +419,22 @@ int main(int argc, char** argv) {
                     G_CALLBACK(initialize_web_extensions),
                    (void*) working_dir_path);
   
-
-
+  
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
   gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
 
+  g_signal_connect(G_OBJECT(window),
+                   "destroy",
+                   G_CALLBACK(webview_destroy_cb),
+                   &keep_running);
+  
   scrolled_window = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_add(GTK_CONTAINER(window), scrolled_window);
   gtk_container_add(GTK_CONTAINER(scrolled_window), web_view);
+
+
   
   gtk_widget_show_all(window);
 

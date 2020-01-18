@@ -330,23 +330,20 @@ int register_uri_scheme(WebKitWebContext* web_context) {
   return 0;
 }
 
-/*
-int toggle_developer_console(gboolean is_on) {
+void toggle_developer_console(WebKitWebView* web_view, gboolean is_on) {
   
-  WebKitSettings *settings = webkit_web_view_get_settings (WEBKIT_WEB_VIEW(w->priv.webview));
-  
-  g_object_set(G_OBJECT(settings), "enable-developer-extras", is_on, NULL);
-  webkit_settings_set_enable_write_console_messages_to_stdout(settings, true);
-    
-  WebKitWebInspector *inspector = webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(w->priv.webview));
+  WebKitWebInspector *inspector;
+  WebKitSettings *settings;
+
+  settings = webkit_web_view_get_settings(web_view);
+  webkit_settings_set_enable_developer_extras(settings, is_on);
+  webkit_settings_set_enable_write_console_messages_to_stdout(settings, is_on);
+  inspector = webkit_web_view_get_inspector(web_view);
   
   if(is_on == TRUE) {
-    webkit_web_inspector_show(WEBKIT_WEB_INSPECTOR(inspector));
+    webkit_web_inspector_show(inspector);
   }
-
 }
-*/
-
 
 // Switch the injected CSS style sheet for the web view
 // or disable the current injected style sheet if stylesheet is NULL
@@ -381,7 +378,6 @@ int main(int argc, char** argv) {
   gboolean keep_running = TRUE;
 
   // TODO check if argv[0] is set
-  
   if(argc < 2) {
     fprintf(stderr, "Usage: %s <url>\n", argv[0]);
     return 1;
@@ -419,7 +415,6 @@ int main(int argc, char** argv) {
                     G_CALLBACK(initialize_web_extensions),
                    (void*) working_dir_path);
   
-  
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
@@ -434,13 +429,13 @@ int main(int argc, char** argv) {
   gtk_container_add(GTK_CONTAINER(window), scrolled_window);
   gtk_container_add(GTK_CONTAINER(scrolled_window), web_view);
 
-
-  
   gtk_widget_show_all(window);
 
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view),
                            argv[1]);
   
+  toggle_developer_console(WEBKIT_WEB_VIEW(web_view), TRUE);
+
   while(keep_running) {
     gtk_main_iteration_do(1);
   }
@@ -449,46 +444,3 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-
-/*
-int main(int argc, const char** argv) {
-
-  WebKitWebContext* web_context;
-  char* path; // path to this binary
-
-  // TODO check if argv[0] is set
-  
-  if(argc < 2) {
-    fprintf(stderr, "Usage: %s <url>\n", argv[0]);
-    return 1;
-  }
-
-  path = realpath(argv[0], NULL);
-  working_dir_path = dirname(path);
-
-  // TODO can we really do this before instantiating the web view?
-  web_context = webkit_web_context_get_default();
-
-  // Reduce caching to reduce memory usage.
-  // We can also switch to WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER
-  // if we feel like we have the memory to spare.
-  // https://webkitgtk.org/reference/webkit2gtk/stable/WebKitWebContext.html#WebKitCacheModel
-  webkit_web_context_set_cache_model(web_context,
-                                     WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER);
-  
-  // TODO check return value
-  register_uri_scheme(web_context);
-  
-  g_signal_connect(web_context,
-                   "initialize-web-extensions",
-                    G_CALLBACK(initialize_web_extensions),
-                   (void*) working_dir_path);
-  
-  // Open wikipedia in a 800x600 resizable window 
-  webview("Webview", argv[1], 800, 600, 1);
-  
-  free(path);
-  return 0;
-}
-
-*/

@@ -1,7 +1,7 @@
 
 A work-in-progress ebook reader, web browser and primary UI for ebook reader devices with electronic paper displays.
 
-Aims to keep a relatively low memory footprint (~50 MB of non-file-backed memory).
+Aims to keep a relatively low memory footprint (~50 MB of non-file-backed memory) while providing all the advanced text rendering options expected of a modern web browser (using webkit).
 
 So far supports no ebook formats with EPUB 3.0.1 support in progress.
 
@@ -64,16 +64,15 @@ man libmagic
 
 # ToDo
 
-* Get rid of webview.h
 * Add configurable keyboard hotkeys for reload, back, forward, home, menu and debug
 * Command line options
-* Add toggle for built-in webkit dark mode
 * Implement .opf parsing and rendering
 * Implement CFI parsing and link following
 * Show front page of books
 * Write code to generate/refresh thumbnails and database of ebooks (IndexedDB?)
 * Change existing jsc filesystem functions to async
 * Add setting to let user enable: process-swap-on-cross-site-navigation-enabled
+* Add setting to let user enable built-in webkit dark mode
 
 ## Slide-down menu
 
@@ -121,11 +120,6 @@ Other stuff to disable in epub mode:
 Stuff to expose to the user:
 
 * auto-load-images
-
-Enable in dev mode only:
-
-* enable-developer-extras
-* enable-write-console-messages-to-stdout
 
 Other interesting settings:
 
@@ -192,11 +186,9 @@ Here's some javascript for parsing CFIs:
 * [readium](https://github.com/readium/readium-cfi-js/) - Needs jquery but seems like that dependency could easily be removed
 * [epub.js](https://github.com/futurepress/epub.js/blob/master/src/epubcfi.js) - Partial implementation
 
-
 Other resources:
 
 * [Fork of readium CFI](https://github.com/educational-resources-and-services/readium-cfi-js)
-
 
 # Other formats
 
@@ -215,7 +207,7 @@ Lower priority:
 * TXT
 * RTF
 * Markdown
-* FictionBook
+* FictionBook2
 * CHM
 
 Even lower priority:

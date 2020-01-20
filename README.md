@@ -230,12 +230,6 @@ The [list of changes from 3.0.1](https://www.w3.org/publishing/epub32/epub-chang
 
 A file called `mimetype` contains the mimetype as a string: `application/epub+zip`.
 
-## NCX
-
-The NCX file is not required for epub 3.0+ files but may be present in older files.
-
-https://www.opticalauthoring.com/inside-the-epub-format-the-still-useful-ncx-file/
-
 ## OPS
 
 Open Publication Structure.
@@ -248,15 +242,82 @@ https://www.opticalauthoring.com/inside-the-epub-format-the-navigation-file/
 
 OPF is the [Open Packaging Format](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm) which is an XML format that contains metadata about the epub. There will be a `content.opf` file inside the `.epub`.
 
+[OPF metadata spec](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm#Section2.2). The `<metadata>` tag can contain `<dc:foo>` elements, `<meta>` elements or arbitrary elements. The `dc:` elements may be inside a `<dc-metadata>` sub-element. There can be multiple `<dc:creator>` tags and they can have a `role=` and `file-as=` (which is used when sorting authors alphabetically). All EPUB 2.0 must include the metadata tags: dc:title, dc:identifier and dc:language. EPUB 3 adds `<meta property="dcterms:modified">2011-01-01T12:00:00Z</meta>` as a required field. In EPUB 3.0 the `role=`, `file-as=` etc. properties on creator are specified as:
+
+```
+    <dc:creator id="creator">Haruki Murakami</dc:creator>
+    <meta refines="#creator" property="role" scheme="marc:relators" id="role">aut</meta>
+    <meta refines="#creator" property="alternate-script" xml:lang="ja">村上 春樹</meta>
+    <meta refines="#creator" property="file-as">Murakami, Haruki</meta>
+    <meta refines="#creator01" property="display-seq">1</meta>
+```
+
+The `display-seq` property specifies author name display sequence and is not present in a `<dc:creator display-seq=?>` version.
+
+`<dc:date>2000-01-01T00:00:00Z</dc:date>` is publication date and not required.
+
+ISBN is stored as `<dc:identifier opf:scheme="ISBN">` so that might be the standard way. 
+
+The `<manifest>` element contains a list of all files in the book. They need `id=`, `href=` and `media-type=` (mimetype) + optional `fallback=<id>` and `fallback-style=<id>`. For 3.0 exactly one manifest `<item>` must be declared as the EPUB Navigation Document using the `properties="navn"` property. Though remember `properties=` can be a space-separated list of properties.
+
+The `<spine>` element contains references to the ids in the `<manifest>` section and simply specifies the reading order. The attribute `toc=`, if it exists, points to the `id` of a `<manifest>` element which is the table of contents NCX file. All EPUB 2.0 files _must_ include an NCX file but reading systems only _should_ support it. The NCX item in manifest cannot have a fallback. Another attribute in 3.0 is `page-progression-direction=` which can be "rtl", "ltr" and "default".
+
+The `<guide>` element may or may not be present and references mayor sections like "cover", "toc" and "bibliography". There is only a short list of [possible section types](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm#Section2.6) so it should be easy to support.
+
 Here's some javascript for parsing OPF:
 
 https://github.com/futurepress/epub.js/blob/master/src/packaging.js
+
+## NCX
+
+The NCX file is not required for epub 3.0+ files but must be present in 2.0 files. It provides the table of contents. The `<docTitle>` are obvious `<docAuthor>` and then `<navMap>` is the main table of contents with `<navList>` 
+
+https://www.opticalauthoring.com/inside-the-epub-format-the-still-useful-ncx-file/
+
+## EPUB Navigation Document
+
+* [Specification](http://idpf.org/epub/301/spec/epub-contentdocs.html#sec-xhtml-nav)
+
+This is the EPUB 3.0 replacement for NCX (though both can be present). They are basically an xhtml version of the NCX file.
+
+In the `<body>` there are a set of `<nav epub:type="toc" id="toc">` elements where `epub:type=` is either "toc", "page-list" or "landmarks". The `<nav>` element can contain a single heading tag (h1, h2, h3, h4, h5, h6 or hgroup) and a single `<ol>` tag. If `<nav>` elements contain the `hidden=` property then they must not be displayed (doesn't matter what the attribute value is).
+
+## EPUB-specific CSS
+
+E.g:
+
+```
+  -epub-hyphens*
+  -epub-line-break
+  -epub-text-align-last
+  -epub-word-break
+  -epub-text-orientation
+  -epub-fullsize-kana  
+  -epub-text-emphasis
+  -epub-text-emphasis-color
+  -epub-text-emphasis-position
+  -epub-text-emphasis-style
+  -epub-text-underline-position
+  -epub-text-combine
+  -epub-text-combine-horizontal
+  -epub-ruby-position 
+```
+
+Some of these are actually in normal CSS without the `-epub-` prefix, e.g. `ruby-position`.
+
+## Javascript
+
+If the user wants to turn on javascript (we should keep it default off) we need to provide [this special object](http://idpf.org/epub/301/spec/epub-contentdocs.html#app-epubReadingSystem).
+
+## Footnotes
+
+See https://github.com/koreader/koreader/pull/4440
 
 ## MathML
 
 WebKit only has a bit of MathML support.
 
-We could use [MathJax](https://www.mathjax.org/) to render MathML in javascript but the ram usage jumps to 107 MB when loading the MathJax sample page, which is only rendering a few formulas.
+We could use [MathJax](https://www.mathjax.org/) to render MathML in javascript but the ram usage jumps to 170 MB (PSS) or 280 MB (RSS) when loading the MathJax sample page, which is only rendering a few formulas.
 
 [Lasem](https://wiki.gnome.org/Projects/Lasem) but it's unclear how complete it is. It can render to SVG or PNG so we could just pull MathML html nodes using javascript, pass them to Lasem and take back the SVG or image data and replace in the DOM. It might also be possible to do all this without javascript.
 

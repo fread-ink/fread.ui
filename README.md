@@ -144,9 +144,34 @@ Other interesting settings:
 
 # Memory usage
 
-This app rendering the front page of english wikipedia took 60.2 MB of ram (without counting file-backed memory). As an extra check I installed latest Debian 10.2 x86 netinstall in a virtualbox with 256 MB of ram, then disabled swap and installed `xinit` and `awesome` to get a basic X environment, then ran `startx`. I then compiled and ran the webview example and checked MemAvailable in `/proc/meminfo`. Before running the webview example it was 178.9 and while running the example it was 131.7 MB, so it really was not using more than 47.2 MB of ram. This was all on x86.
+Memory usage was tested on the latest Debian 10.2 x86 netinstall in a virtualbox with 256 MB of ram, with disabled swap and `apt install xinit awesome` to get a basic X environment. The main process and two WebKit processes together use around 94 to 144 MB depending on how you measure after starting and loading up the mobile front page of english wikipedia:
 
-We can also disable some features to make libwebkitgtk smaller, e.g `-DENABLE_GEOLOCATION=OFF` though this may only result in fewer dependencies and may not affect non-file-backed memory usage. These options can be found in `Source/cmake/WebKitFeatures.cmake`. We can probably disable the following:
+```
+  PID User     Command                         Swap      USS      PSS      RSS 
+ 3604 juul     /usr/lib/i386-linux-gnu/web        0    12636    18524    31420 
+ 3603 juul     /usr/lib/i386-linux-gnu/web        0    47500    58284    77720 
+ 3596 juul     ./fread.ui https://en.m.wik        0     8332    19186    37932 
+
+Unshared:   66.86 MB
+PSS:        93.74 MB
+Resident:  143.62 MB
+```
+
+The script used to generate the above output is `memory_usage/show_memory_usage.rb`. To run this script you need `apt install ruby smem`. Make sure you're not running any other WebKit-based programs when running that script. The `PSS` field is a measure made by smem that takes into account a proportion of shared library memory usage. Some pie charts for PSS and RSS are provided in `memory_usage/` to further illuminate how memory is used by the system. Keep in mind that you need to add up the `WebKitWebProcess`, `WebKitNetworkProcess` and `fread.ui` in those pie charts.
+
+The pie charts show that 19.2 % of memory (PSS) or 26.4 % (RSS) are used by the fread.ink app, again with the mobile english front page of wikipedia loaded.
+
+Generating the pie charts require `apt install python-matplotlib` and where made using:
+
+```
+# for RSS
+smem --bar=name -s rss
+
+# for PSS
+smem --bar=name -s pss
+```
+
+We can disable some features to make libwebkitgtk smaller, e.g `-DENABLE_GEOLOCATION=OFF` though this may only result in fewer dependencies and may not affect non-file-backed memory usage. These options can be found in `Source/cmake/WebKitFeatures.cmake`. We can probably disable the following:
 
 
 ```

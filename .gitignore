@@ -1,5 +1,5 @@
 *~
-main
-web_extensions/libfoo.so
+fread.ui
+web_extensions/fread.so
 app/static/build/**
 app/node_modules/**

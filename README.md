@@ -1,9 +1,9 @@
 
 fread.ui is work-in-progress ebook reader, web browser and primary UI for the [fread.ink](https://fread.ink) GNU/Linux distro for e-paper devices.
 
-Aims to keep a relatively low memory footprint (~50 MB of non-file-backed memory) while providing all the advanced text rendering options expected of a modern web browser (using webkit).
+fread.ui aims to be run well on a system with 256 of total memory while providing all the advanced text rendering options expected of a modern ebook reader (using webkit). To compare, all Kindle models starting with the 3rd generation have 256 MB of ram or more.
 
-So far supports no ebook formats with EPUB 3.0.1 support in progress.
+So far fread.ui supports no ebook formats with EPUB 3.2 support in progress.
 
 This project is based on WebKit2GTK and JavaScriptCore.
 
@@ -44,6 +44,16 @@ For more info on developing the web app see `app/README.md`.
 * Reload page: ctrl-r
 * Navigate back: alt-left
 * Navigate forward: alt-right
+
+# Implementation
+
+fread.ui is implemented as a combination of a custom URI scheme, a WebKit Web Process Extension and a minimal web app application that uses preact. This is all on top of WebKit2GTK.
+
+The custom URI scheme allows opening of EPUB files using e.g. `ebook://path/to/my/book.epub` and also allows browsing of the files contained in a zip archive (epub uses zip) using the syntax `ebook://path/to/my/book.epub//internal/zip/archive/file.htm`. 
+
+The Web Process Extension adds a global `Fread` javascript object which allows calling a set of C functions from javascript. Currently these add filesystem utility functions such as `Fread.zip_ls` which lists the files in a zip file residing on the filesystem. In the future this will include functions for updating the electronic paper display. The API can glarked from `web_extensions/fread.js`.
+
+The web app provides parsing of the various EPUB-specific metadata formats and rendering of that metadata into something presentable to the user. It is located in `app/`.
 
 # APIs and manuals
 
@@ -152,6 +162,45 @@ We can also disable some features to make libwebkitgtk smaller, e.g `-DENABLE_GE
 
 # EPUB support
 
+## 2.0.1
+
+Specified by the three standards:
+
+* [OPF 2.0.1](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm)
+* [OPS 2.0.1](http://idpf.org/epub/20/spec/OPS_2.0.1_draft.htm)
+* [OCF 2.0.1](http://www.idpf.org/doc_library/epub/OCF_2.0.1_draft.doc)
+
+## 3.0.1
+
+Specified by:
+
+* [EPUB 3.0.1](http://idpf.org/epub/301/spec/epub-overview.html)
+* [Publications 3.0.1](http://idpf.org/epub/301/spec/epub-publications.html)
+* [Content Documents 3.0.1](http://idpf.org/epub/301/spec/epub-contentdocs.html)
+* [OCF 3.0.1](http://idpf.org/epub/301/spec/epub-ocf.html)
+* [Media Overlays 3.0.1](http://idpf.org/epub/301/spec/epub-mediaoverlays.html)
+
+Only big difference between 3.0.0 and 3.0.1 is the addition of Fixed Layout Documents which is a non-reflowable type of EPUB document.
+
+## 3.1
+
+Here's a [list of changes from 3.0.1](http://idpf.org/epub/31/spec/epub-changes.html).
+
+The biggest things added are:
+
+* WOFF 2.0 and SFNT font support
+* Allows remotely hosted fonts, audio, video and any resource loaded by a script
+
+Script support is optional now though so we can still disable script tag support and manually load fonts, audio and video, but we should probably have a user setting for it with the default being "Ask the user".
+
+## 3.2
+
+* [W3C EPUB 3.2 page](https://www.w3.org/publishing/groups/epub3-cg/
+
+Only finalized in May of 2019.
+
+The [list of changes from 3.0.1](https://www.w3.org/publishing/epub32/epub-changes.html) is odd. From a quick read, apart from some reformatting and rewording, it looks identical to the list of changes from 3.0.1 to 3.1 and why isn't it a list of changes from 3.1 to 3.2?
+
 ## mimetype
 
 A file called `mimetype` contains the mimetype as a string: `application/epub+zip`.
@@ -164,9 +213,9 @@ https://www.opticalauthoring.com/inside-the-epub-format-the-still-useful-ncx-fil
 
 ## OPS
 
-Open Publication Structure:
+Open Publication Structure.
 
-http://idpf.org/epub/20/spec/OPS_2.0.1_draft.htm
+There's a [parser in readium](https://github.com/readium/readium-js/tree/master/js/epub-model).
 
 https://www.opticalauthoring.com/inside-the-epub-format-the-navigation-file/
 
@@ -177,6 +226,16 @@ OPF is the [Open Packaging Format](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.
 Here's some javascript for parsing OPF:
 
 https://github.com/futurepress/epub.js/blob/master/src/packaging.js
+
+## MathML
+
+WebKit only has a bit of MathML support.
+
+We could use [MathJax](https://www.mathjax.org/) to render MathML in javascript but the ram usage jumps to 107 MB when loading the MathJax sample page, which is only rendering a few formulas.
+
+[Lasem](https://wiki.gnome.org/Projects/Lasem) but it's unclear how complete it is. It can render to SVG or PNG so we could just pull MathML html nodes using javascript, pass them to Lasem and take back the SVG or image data and replace in the DOM. It might also be possible to do all this without javascript.
+
+KOReader also does not have MathML support so we can't use the same code.
 
 ## EPUB CFI
 
@@ -262,9 +321,20 @@ We should probably use this only for its PDF and XPS support.
 
 ## Readium
 
-[Readium](https://github.com/readium/readium-js) is an in-browser EPUB reader.
+[Readium.js](https://github.com/readium/readium-js) is an in-browser EPUB reader that can also be installed as a Chromium app.
 
-Possibly a good alternative to Epub.js
+Possibly a good alternative to Epub.js as a source of epub parsing code.
+
+Doesn't seem to support EPUB 2.0 (no .opf support).
+
+Opening a < 100 kB epub using the Chromium app resulted in the following total memory usage
+
+```
+Virtual       22338.96 MB
+Resident        834.85 MB
+PSS (smem)      406.01 MB
+Dirty           275.17 MB
+```
 
 ## Epub.js
 
@@ -274,7 +344,7 @@ Possibly a good alternative to Epub.js
 
 [Foliate](https://github.com/johnfactotum/foliate) is an interesting ebook reader which is entirely (or almost) written in javascript using [Epub.js](https://github.com/futurepress/epub.js/) and the [GJS](https://gitlab.gnome.org/GNOME/gjs) javascript bindings for the GNOME platform libraries. It also uses WebKit2GTK.
 
-When opening a 1.9 MB epub in Foliate the absolute minimal memory usage was 69 MB. When opening a larger epub it's obvious that the entire epub is loaded into memory in a way that isn't just the normal linux aggressive caching of files since this memory usage is listed in the "Dirty" column by `pmap -x`. This probably happens because the way foliate opens epub files (which are zip files) is to not open them. What opens them is Epub.js which runs inside the browser javascript context and unzips the entire file inside of browser memory using the JSZip library.
+When opening a < 100 kB epub in Foliate the memory usage after startup is > 240 MB (RSS). When opening a larger epub it's obvious that the entire epub is loaded into memory in a way that isn't just the normal linux aggressive caching. This probably happens because the way foliate opens epub files (which are zip files) is to use Epub.js which runs inside the browser javascript context and unzips the entire file inside of browser memory using the JSZip library.
 
 Foliate uses the python tool [KindleUnpack](https://github.com/kevinhendricks/KindleUnpack) to read Kindle format ebooks.
 

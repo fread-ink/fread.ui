@@ -1,4 +1,5 @@
 import {h, render, Component} from 'preact';
+import parseLanguage from './parse_language.js';
 
 import Root from './components/Root.js';
 
@@ -8,32 +9,121 @@ var app = {
 
 window.app = app;
 
-/*
-  Examples: http://idpf.org/epub/301/spec/epub-ocf.html#physical-container-zip
+class OPF {
 
-  # mimetype
+  // Get all meta tags matching tagName
+  getMetas(tagName) {
+    // We need to do this complicated stuff because querySelector
+    // does not support specifying the xml namespace
+    // so if we get a tagName like "foo:bar" we query
+    // for all tag names with "bar" and filter for ones
+    // actually called "foo:bar"
+    const origTagName = tagName;
+    const colonIndex = tagName.indexOf(':')
+    if(colonIndex >= 0) {
+      if(colonIndex >= (tagName.length - 1)) return null
+      tagName = tagName.slice(colonIndex + 1);
+    }
+    
+    const els = this.doc.querySelectorAll("package > metadata " + tagName);
+    
+    if(colonIndex < 0) {
+      return els;
+    }
+    const ret = [];
+    var i;
+    for(i=0; i < els.length; i++) {
+      if(els[i].tagName === origTagName) {
+        ret.push(els[i]);
+      }
+    }
+    return ret;
+  }
+
+  getMeta(tagName) {
+    const els = this.getMetas(tagName);
+    if(!els.length) return null;
+    return els[0].textContent;
+  }
   
-  We should check that is contains exactly "application/epub+zip"
+  parseIdentifiers() {
+    var el = this.doc.querySelector('package');
+    if(!el) return {};
+    // The <package unqiue-identifier=''> attribute
+    // references the id= of a <dc:identifier>
+    // containing the actual EPUB UUID.
+    // There may also be an identifier containing an ISBN
+    const epubID = el.getAttribute('unique-identifier');
+    const els = this.getMetas('dc:identifier');
+    if(!els.length) return {};
+    const o = {};
+    var i;
+    for(i=0; i < els.length; i++) {
+      el = els[i];
+      if(el.getAttribute('opf:scheme').toUpperCase() === 'ISBN') {
+        o.isbn = el.textContent;
+        continue;
+      }
+      if(epubID && el.getAttribute('id') === epubID) {
+        o.uuid = epubID;
+      }
+    }
+    return o;
+  }
+  
+  parseCreators() {
+    var els = this.doc.querySelectorAll("package > metadata dc:creator");
+    if(!els.length) return;
+  }
+  
+  constructor(opfStr) {
+    var el;
 
-  # META-INF/container.xml 
+    // could throw an exception
+    this.doc = parseXHTML(opfStr);
+    
+    this.title = this.getMeta('dc:title')
+    this.identifiers = this.parseIdentifiers();
+    
+    const lang = this.getMeta('dc:language')
+    if(lang) {
+      this.language = parseLanguage(lang);
+    }
+    console.log("language:", this.language);
 
-  Can have multiple root elements for multiple versions of the same book but just lusing the first one is allowed.
-  Used to find the .opf file (the Package Document) for the book.
+//    this.parseIdentifiers();
+//    this.parseTitle();
+    
 
-  Rootfile element can also contain multiple <link rel="foo" href="bar media-type="" /> 
-  Documentation for rel: https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
-  Probably the only ones relevant: stylesheet, author, tag, license
+  }
+  
+}
 
-  # META-INF/encryption.xml
 
-  Worth checking for so we know we can't read the file.
+function parseDOM(str, mimetype) {
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(str, mimetype);
 
-  Looks like nothing else in the META-INF/ is useful as of 3.0.1 since the formats of other files such as metadata.xml are not specified.
+  // Check for errors according to:
+  // see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser
+  var errs = doc.getElementsByTagName('parsererror');
+  if(errs.length) {
+    var txt = errs[0].textContent;
+    txt = txt.replace(/Below is a rendering.*/i, ''); // remove useless message
+    txt = txt.replace(':', ': ').replace(/\s+/, ' '); // improve formatting
+    throw new Error("Parsing XML failed: " + txt);
+  }
 
-  # Package document (.opf)
+  return doc;
+}
 
-  http://idpf.org/epub/301/spec/epub-publications.html#sec-package-documents
-*/
+function parseXML(str) {
+  return parseDOM(str, 'text/xml');
+}
+
+function parseXHTML(str) {
+  return parseDOM(str, 'application/xhtml+xml');
+}
 
 // Returns the path to the Package Document (.opf file)
 // for the first representation found in `META-INF/container.xml`
@@ -41,12 +131,12 @@ function readContainerXML(filepath, cb) {
   Fread.getFromZip(filepath, 'META-INF/container.xml', false, function(err, str) {
     if(err) return cb(err);
 
+    try {
+      var doc = parseXML(str);
+    } catch(err) {
+      return cb(err);
+    }
 
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(str, 'text/xml');
-    // TODO check for parse error
-    // see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser
-    
     var els = doc.querySelectorAll("container > rootfiles > rootfile");
     console.log("rootfiles:", els);
     if(els.length < 1) {
@@ -72,14 +162,20 @@ function readContainerXML(filepath, cb) {
   });
 }
 
-function readOPF(filepath, path, cb) {
 
+
+function readOPF(filepath, path, cb) {
+  
   Fread.getFromZip(filepath, path, false, function(err, str) {
     if(err) return cb(err);
 
-    console.log("OPF content:", str);
+    try {
+      var opf = new OPF(str);
+    } catch(err) {
+      return cb(err);
+    }
+    
 
-    // TODO parse OPF
     
   });
 }

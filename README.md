@@ -157,7 +157,7 @@ PSS:        93.74 MB
 Resident:  143.62 MB
 ```
 
-The script used to generate the above output is `memory_usage/show_memory_usage.rb`. To run this script you need `apt install ruby smem`. Make sure you're not running any other WebKit-based programs when running that script. The `PSS` field is a measure made by smem that takes into account a proportion of shared library memory usage. Some pie charts for PSS and RSS are provided in `memory_usage/` to further illuminate how memory is used by the system. Keep in mind that you need to add up the `WebKitWebProcess`, `WebKitNetworkProcess` and `fread.ui` in those pie charts.
+The script used to generate the above output is `memory_usage/show_memory_usage.rb`. To run this script you need `apt install ruby smem`. Make sure you're not running any other WebKit-based programs when running that script. The `PSS` field is a measure made by `smem` that takes into account a proportion of shared library memory usage. Some pie charts for PSS and RSS are provided in `memory_usage/` to further illuminate how memory is used by the system. Keep in mind that you need to add up the `WebKitWebProcess`, `WebKitNetworkProcess` and `fread.ui` in those pie charts.
 
 The pie charts show that 19.2 % of memory (PSS) or 26.4 % (RSS) are used by the fread.ink app, again with the mobile english front page of wikipedia loaded.
 
@@ -226,9 +226,28 @@ Only finalized in May of 2019.
 
 The [list of changes from 3.0.1](https://www.w3.org/publishing/epub32/epub-changes.html) is odd. From a quick read, apart from some reformatting and rewording, it looks identical to the list of changes from 3.0.1 to 3.1 and why isn't it a list of changes from 3.1 to 3.2?
 
-## mimetype
+## META-INF/mimetype
 
-A file called `mimetype` contains the mimetype as a string: `application/epub+zip`.
+A file called `mimetype` contains the string "application/epub+zip".
+
+## META-INF/container.xml 
+
+Can have multiple root elements for multiple versions of the same book but just using the first one is allowed.
+Used to find the .opf file (the Package Document) for the book.
+
+Rootfile element can also contain multiple <link rel="foo" href="bar media-type="" /> 
+Documentation for rel: https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
+Probably the only ones relevant: stylesheet, author, tag, license
+
+## META-INF/encryption.xml
+
+Worth checking for so we know we can't read the file.
+
+## META-INF/com.apple.ibooks.display-options.xml
+
+Looks like these proprietary extensions are used to specify stuff like fonts and we'll need to parse them. Readium already does.
+
+Looks like nothing else in the META-INF/ is useful as of 3.0.1 since the formats of other files such as metadata.xml are not specified.
 
 ## OPS
 
@@ -410,8 +429,6 @@ We should probably use this only for its PDF and XPS support.
 [Readium.js](https://github.com/readium/readium-js) is an in-browser EPUB reader that can also be installed as a Chromium app.
 
 Possibly a good alternative to Epub.js as a source of epub parsing code.
-
-Doesn't seem to support EPUB 2.0 (no .opf support).
 
 Opening a < 100 kB epub using the Chromium app resulted in the following total memory usage
 

@@ -1,5 +1,5 @@
 import {h, render, Component} from 'preact';
-import {hyphenate as formatISBN} from 'beautify-isbn';
+import {hyphenate as formatISBN, validate as validateISBN} from 'beautify-isbn';
 import parseLanguage from './parse_language.js';
 
 import Root from './components/Root.js';
@@ -228,7 +228,6 @@ class OPF {
   parseIdentifiers() {
     const numbersOnlyRegex = new RegExp(/[^\d]+/g);
     const isbnRegex = new RegExp(/^isbn/i);
-    const isbnRegexAny = new RegExp(/isbn/i);
     
     var el = this.doc.querySelector('package');
     if(!el) return {};
@@ -253,12 +252,6 @@ class OPF {
       //
       if(epubID && el.getAttribute('id') === epubID) {
         o['UUID'] = el.textContent;
-
-        // Some epubs put the ISBN as the UUID
-        if(el.textContent.match(isbnRegexAny)) {
-          this.setISBN(o, el.textContent);
-          continue;
-        }
       }
 
       // Parse older form of ISBN
@@ -304,6 +297,20 @@ class OPF {
         this.setISBN(o, el.textContent);
       }
       
+    }
+
+    // Some epubs put the ISBN as the UUID
+    // check for this as a last resort
+    // but only if it validates as a real ISBN.
+    //
+    // <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
+    // <dc:identifier id="bookid">978-1-4302-6572-6</dc:identifier>
+    //
+    if(o['UUID'] && !o['ISBN-10'] && !o['ISBN-13']) {
+      val = o['UUID'].replace(numbersOnlyRegex, '');
+      if(validateISBN(val)) {
+        this.setISBN(o, val);
+      }
     }
     return o;
   }
@@ -416,7 +423,14 @@ class OPF {
     var el;
 
     this.doc = parseXHTML(opfStr);
-    
+
+    // TODO there can be more than one title, e.g:
+    /*
+      <dc:title id="pub-title">The Hackable City</dc:title>
+      <meta refines="#pub-title" property="title-type">main</meta>
+      <dc:title id="pub-subtitle">Digital Media and Collaborative City-Making in the Network Society</dc:title>
+      <meta refines="#pub-subtitle" property="title-type">subtitle</meta>
+    */
     this.title = this.getMeta('dc:title', true)
     this.description = this.getMeta('dc:description', true)
     console.log("description:", this.description);

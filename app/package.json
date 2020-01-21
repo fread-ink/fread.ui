@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cospired/i18n-iso-languages": "^2.1.0",
+    "beautify-isbn": "^2.2.0",
     "i18n-iso-countries": "^4.3.1"
   },
   "devDependencies": {

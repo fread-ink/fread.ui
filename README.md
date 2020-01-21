@@ -283,6 +283,7 @@ The `<spine>` element contains references to the ids in the `<manifest>` section
 
 The `<guide>` element may or may not be present and references mayor sections like "cover", "toc" and "bibliography". There is only a short list of [possible section types](http://idpf.org/epub/20/spec/OPF_2.0.1_draft.htm#Section2.6) so it should be easy to support.
 
+
 Here's some javascript for parsing OPF:
 
 https://github.com/futurepress/epub.js/blob/master/src/packaging.js

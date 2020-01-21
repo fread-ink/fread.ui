@@ -9,8 +9,30 @@ var app = {
 
 window.app = app;
 
-class OPF {
+// supported cover image mimetypes
+const supportedCoverMediaTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/svg+xml'
+];
 
+
+// Supported cover image file extensions
+// and their equivalent media types
+const supportedCoverFileTypeConv = {
+  'jpeg': 'image/jpeg',
+  'jpg': 'image/jpeg',
+  'png': 'image/png',
+  'gif': 'image/gif',
+  'svg': 'image/svg+xml'
+};
+
+// Supported cover image file extensions
+const supportedCoverFileTypes = Object.keys(supportedCoverFileTypeConv);
+
+class OPF {
+  
   // Get all meta tags matching tagName
   getMetas(tagName) {
     // We need to do this complicated stuff because querySelector
@@ -40,11 +62,29 @@ class OPF {
     return ret;
   }
 
-  getMeta(tagName) {
+  getMeta(tagName, getTextContent) {
     const els = this.getMetas(tagName);
     if(!els.length) return null;
-    return els[0].textContent;
+    if(getTextContent) {
+      return els[0].textContent;
+    }
+    return els[0];
   }
+
+  // TODO also figure out how to parse this:
+  // (from the EPUB 3.0.1 standard)
+  /*
+        <dc:identifier 
+              id="isbn13">urn:isbn:9780741014559</dc:identifier>
+        <meta refines="#isbn13" 
+              property="identifier-type" 
+              scheme="onix:codelist5">15</meta>
+        
+        <dc:identifier id="isbn10">0-7410-1455-6</dc:identifier>
+        <meta refines="#isbn10" 
+              property="identifier-type" 
+              scheme="onix:codelist5">2</meta>
+  */
   
   parseIdentifiers() {
     var el = this.doc.querySelector('package');
@@ -61,13 +101,90 @@ class OPF {
     for(i=0; i < els.length; i++) {
       el = els[i];
       if(el.getAttribute('opf:scheme').toUpperCase() === 'ISBN') {
-        o.isbn = el.textContent;
+        const isbn = el.textContent.replace(/[^\d]+/, '');
+        if(isbn.length === 10) {
+          o.isbn10 = isbn;
+        } else if(isbn.length === 13) {
+          o.isbn13 = isbn;
+        }
         continue;
       }
       if(epubID && el.getAttribute('id') === epubID) {
         o.uuid = epubID;
       }
     }
+    return o;
+  }
+
+  // Check if a <manifest> <item> which is supposed to be a cover image
+  // is of a supported cover image media-type (e.g. jpg, png, gif, svg).
+  // If no media-type attribute is specified then try to match the file extension.
+  isValidCoverImageElement(el) {
+    if(!el) return false;
+    const mediaType = el.getAttribute('media-type');
+    if(!mediaType) {
+      const href = el.getAttribute('href');
+      if(!href) return false;
+      if(href.indexOf('.') < 0) return false;
+      const ext = href.replace(/.*\./, '').toLowerCase()
+      if(supportedCoverFileTypes.indexOf(ext) >= 0) {
+        return supportedCoverFileTypeConv[ext];
+      }
+    }
+    if(supportedCoverMediaTypes.indexOf(mediaType) >= 0) {
+      return mediaType;
+    }
+    return false;
+  }
+
+  // Find the cover image
+  // TODO write unit tests
+  parseCoverImage() {
+    
+    var o = {
+      path: null,
+      mediaType: null
+    };
+    
+    var el;
+    
+    // Some epubs have an <item properties="cover-image"> where the properties
+    // can be a space-separated list
+    el = this.doc.querySelector("package > manifest item[properties~=cover-image]");
+    
+    // Other epubs have a <meta name="cover"> or <meta name="cover-image">
+    // that references an <item> id= attribute in the <manifest>
+    if(!this.isValidCoverImageElement(el)) {
+      el = this.doc.querySelector("package > metadata meta[name=cover-image]");
+      if(!this.isValidCoverImageElement(el)) {
+        el = this.doc.querySelector("package > metadata meta[name=cover]");
+        if(!this.isValidCoverImageElement(el)) {
+          const itemID = el.getAttribute('content');
+          if(itemID) {
+            el = this.doc.querySelector("package > manifest item[id="+itemID+"]");
+          }
+        }
+      }
+    }
+
+    // Otherwise look for an <item> with id="cover-image" or id="cover"
+    if(!this.isValidCoverImageElement(el)) {
+      el = this.doc.querySelector("package > manifest item[id=cover-image]");
+      if(!this.isValidCoverImageElement(el)) {
+        el = this.doc.querySelector("package > manifest item[id=cover]");
+      }
+    }
+
+    const mediaType = this.isValidCoverImageElement(el);
+    
+    // We didn't find a cover image
+    if(!mediaType) {
+      return o;
+    }
+
+    o.path = el.getAttribute('href');
+    o.mediaType = mediaType;
+    
     return o;
   }
   
@@ -82,15 +199,16 @@ class OPF {
     // could throw an exception
     this.doc = parseXHTML(opfStr);
     
-    this.title = this.getMeta('dc:title')
+    this.title = this.getMeta('dc:title', true)
     this.identifiers = this.parseIdentifiers();
     
-    const lang = this.getMeta('dc:language')
+    const lang = this.getMeta('dc:language', true)
     if(lang) {
       this.language = parseLanguage(lang);
     }
-    console.log("language:", this.language);
 
+    this.coverImage = this.parseCoverImage();
+    console.log("COVER:", this.coverImage);
 //    this.parseIdentifiers();
 //    this.parseTitle();
     

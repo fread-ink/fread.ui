@@ -3,7 +3,7 @@ fread.ui is work-in-progress ebook reader, web browser and primary UI for the [f
 
 fread.ui aims to be run well on a system with 256 of total memory while providing all the advanced text rendering options expected of a modern ebook reader (using webkit). To compare, all Kindle models starting with the 3rd generation have 256 MB of ram or more.
 
-So far fread.ui supports no ebook formats with EPUB 3.2 support in progress.
+So far fread.ui supports no ebook formats with EPUB support in progress.
 
 This project is based on WebKit2GTK and JavaScriptCore.
 

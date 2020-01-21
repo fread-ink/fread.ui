@@ -205,6 +205,15 @@ class OPF {
     }
     return creators;
   }
+
+  setISBN(o, text) {
+    const val = text.replace(/[^\d]+/g, '');
+    if(val.length === 10) {
+      o['ISBN-10'] = formatISBN(val);
+    } else if(val.length === 13) {
+      o['ISBN-13'] = formatISBN(val);
+    }
+  }
   
   // Get the EPUB's UUID
   // and properly formatted ISBN-10 or ISBN-13 (if present)
@@ -219,6 +228,7 @@ class OPF {
   parseIdentifiers() {
     const numbersOnlyRegex = new RegExp(/[^\d]+/g);
     const isbnRegex = new RegExp(/^isbn/i);
+    const isbnRegexAny = new RegExp(/isbn/i);
     
     var el = this.doc.querySelector('package');
     if(!el) return {};
@@ -243,7 +253,12 @@ class OPF {
       //
       if(epubID && el.getAttribute('id') === epubID) {
         o['UUID'] = el.textContent;
-        continue;
+
+        // Some epubs put the ISBN as the UUID
+        if(el.textContent.match(isbnRegexAny)) {
+          this.setISBN(o, el.textContent);
+          continue;
+        }
       }
 
       // Parse older form of ISBN
@@ -252,12 +267,7 @@ class OPF {
       //
       val = el.getAttribute('opf:scheme');
       if(val && val.toUpperCase() === 'ISBN') {
-        val = el.textContent.replace(numbersOnlyRegex, '');
-        if(val.length === 10) {
-          o['ISBN-10'] = formatISBN(val);
-        } else if(val.length === 13) {
-          o['ISBN-13'] = formatISBN(val);
-        }
+        this.setISBN(o, el.textContent);
         continue;
       }
 
@@ -291,12 +301,7 @@ class OPF {
       // <dc:identifier id="isbn9781509830718">9781509830718</dc:identifier>
       //
       if(attrs['noScheme']['id'].match(isbnRegex)) {
-        val = el.textContent.replace(numbersOnlyRegex, '');
-        if(val.length === 10) {
-          o['ISBN-10'] = formatISBN(val);
-        } else if(val.length === 13) {
-          o['ISBN-13'] = formatISBN(val);
-        }
+        this.setISBN(o, el.textContent);
       }
       
     }

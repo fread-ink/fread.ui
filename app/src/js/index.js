@@ -246,7 +246,7 @@ class OPF {
     for(i=0; i < els.length; i++) {
       el = els[i];
 
-      // Get UUID
+      // Parse UUID
       //
       // <dc:identifier id="uuid_id" opf:scheme="uuid">8ad7cb26-947b-4e7f-89e9-40fd8a4e530a</dc:identifier>
       //
@@ -254,6 +254,17 @@ class OPF {
         o['UUID'] = el.textContent;
       }
 
+      // Parse URIs
+      //
+      // <dc:identifier opf:scheme="URI" id="id">http://www.gutenberg.org/ebooks/851</dc:identifier>
+      if(el.getAttribute('opf:scheme') === 'URI') {
+        if(!o['URIs']) {
+          o['URIs'] = [el.textContent];
+        } else {
+          o['URIs'].push(el.textContent);
+        }
+      }
+      
       // Parse older form of ISBN
       //
       // <dc:identifier opf:scheme="ISBN">0-330-32002-5</dc:identifier>
@@ -434,6 +445,10 @@ class OPF {
     this.title = this.getMeta('dc:title', true)
     this.description = this.getMeta('dc:description', true)
     console.log("description:", this.description);
+
+    // TODO see the fucked up description in
+    // Glass_and_Gardens__Solarpunk_Su_Sarena_Ulibarri.epub
+    
     this.publicationDate = this.getMeta('dc:date', true);
     if(this.publicationDate) {
       this.publicationDate = new Date(this.publicationDate);
@@ -458,6 +473,21 @@ class OPF {
     console.log("COVER:", this.coverImage);
 
     // TODO get cover (html, not image)
+
+    // TODO subject used as tags
+    /*
+    <dc:subject>solarpunk</dc:subject>
+    <dc:subject>climate change</dc:subject>
+    <dc:subject>optimistic science fiction</dc:subject>
+    <dc:subject>utopia</dc:subject>
+    <dc:subject>future</dc:subject>
+    <dc:subject>renewable energies</dc:subject>
+
+    or
+
+    <dc:subject xmlns:dc="http://purl.org/dc/elements/1.1/">COMPUTERS / Programming / General</dc:subject>
+    */
+    
   }
 }
 

@@ -41,10 +41,10 @@ module.exports = function(code, userLanguage) {
   
   if(code.indexOf('-') >= 0) {
     const fields = code.split('-');
-    languageCode = code[0];
-    countryCode = code[1];
+    languageCode = code[0].toLowerCase();
+    countryCode = code[1].toUpperCase();
   } else {
-    languageCode = code;
+    languageCode = code.toLowerCase();
   }
 
   if(languageCode.length === 3) {

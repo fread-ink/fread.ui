@@ -409,7 +409,7 @@ class OPF {
           if(parts.length <= 1) {
             ret.push(author.name);
           } else {
-            ret.push(parts[parts.length-1] + ', ' + parts.slice(1).join(' '));
+            ret.push(parts[parts.length-1] + ', ' + parts.slice(0, parts.length - 1).join(' '));
           }
         }
         continue;
@@ -452,10 +452,12 @@ class OPF {
     if(lang) {
       this.language = parseLanguage(lang);
     }
+    console.log("Language:", this.language);
     
     this.coverImage = this.parseCoverImage();
     console.log("COVER:", this.coverImage);
-    
+
+    // TODO get cover (html, not image)
   }
 }
 

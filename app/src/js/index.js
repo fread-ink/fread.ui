@@ -374,32 +374,70 @@ class OPF {
     
     return o;
   }
-  
+
+  // Public API below
+
+  // Get an array of the authors names, sorted correctly
+  // If `forFiling` is true then use the `file-as=` version
+  // of the names if they are present, and if not present
+  // convert e.g. "John Doe" to "Doe, John"
+  getAuthors(forFiling) {
+    if(!this.creators || !this.creators.aut) return [];
+    var whitespace = new RegExp(/\s+/);
+
+    var ret = [];
+    var i, parts, author;
+    for(i=0; i < this.creators.aut.length; i++) {
+      author = this.creators.aut[i];
+      if(forFiling) {
+        if(author['for-filing']) {
+          ret.push(author['for-filing']);
+        } else {
+          parts = author.name.split(whitespace);
+          if(parts.length <= 1) {
+            ret.push(author.name);
+          } else {
+            ret.push(parts[parts.length-1] + ', ' + parts.slice(1).join(' '));
+          }
+        }
+        continue;
+      }
+      ret.push(author.name);
+    }
+    return ret;
+  }
+  // Throws an exception if XHTML parsing fails
   constructor(opfStr) {
     var el;
 
-    // could throw an exception
     this.doc = parseXHTML(opfStr);
     
     this.title = this.getMeta('dc:title', true)
+    this.description = this.getMeta('dc:description', true)
+    console.log("description:", this.description);
+    this.publicationDate = this.getMeta('dc:date', true);
+    if(this.publicationDate) {
+      this.publicationDate = new Date(this.publicationDate);
+    }
+    console.log("publication date:", this.publicationDate);
+    this.publisher = this.getMeta('dc:publisher', true)
+    console.log("publisher:", this.publisher);
     this.identifiers = this.parseIdentifiers();
     console.log("IDENTIFIERS:", this.identifiers);
     this.creators = this.parseCreators();
     console.log("Creators:", this.creators);
+    console.log("Authors:", this.getAuthors());
+    console.log("Authors for filing:", this.getAuthors(true));
     
     const lang = this.getMeta('dc:language', true)
     if(lang) {
       this.language = parseLanguage(lang);
     }
-
+    
     this.coverImage = this.parseCoverImage();
     console.log("COVER:", this.coverImage);
-//    this.parseIdentifiers();
-//    this.parseTitle();
     
-
   }
-  
 }
 
 

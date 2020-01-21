@@ -99,16 +99,18 @@ class OPF {
   }
 
   // Tags can refine previous tags, e.g:
-  // <dc:identifier id="foo" some-prop="florp">txt</dc:identifier>
-  // <meta refines="#foo" property="my-prop" scheme="my:scheme">some-val</meta>
-  // <meta refines="#foo" property="my-prop2" scheme="my:scheme">some-val2</meta>
-  // <meta refines="#foo" property="my-prop3">some-val3</meta>
-  // This finds any tags that refine a previous tag
+  //
+  //   <dc:identifier id="foo" opf:some-prop="florp">txt</dc:identifier>
+  //   <meta refines="#foo" property="my-prop" scheme="my:scheme">some-val</meta>
+  //   <meta refines="#foo" property="my-prop2" scheme="my:scheme">some-val2</meta>
+  //   <meta refines="#foo" property="my-prop3">some-val3</meta>
+  //
+  // This function finds any tags that refine a previous tag
   // and spits out the integrated data as an object, e.g. for the above:
   // {
   //   "noScheme": {
   //     id: "foo",
-  //     some-prop: "florp",
+  //     opf:some-prop: "florp",
   //     my-prop3: "some-val3"
   //   },
   //   "my:scheme": {
@@ -116,36 +118,94 @@ class OPF {
   //     my-prop2": "some-val2"
   //   }
   // }
-  refineMeta(element) {
+  // If flatten is truthy then instead you'd get:
+  // {
+  //   id: "foo",
+  //   opf:some-prop: "florp",
+  //   my-prop3: "some-val3"
+  //   my-prop": "some-val",
+  //   my-prop2": "some-val2"
+  // }
+  //
+  // If dropSchemes is truthy then the scheme is removed from all keys
+  // e.g. 'opf:some-prop' becomes 'some-prop'
+  //
+  refineMeta(element, flatten, dropSchemes) {
+    const schemeStripRegex = new RegExp(/^.+:/);
+    
     const attrs = element.getAttributeNames();
-    const o = {
-      noScheme: {}
-    };
+    const o = {};
+    if(!flatten) {
+      o.noScheme = {};
+    }
     var i;
     var attr;
-    var scheme = o.noScheme;
+    var val;
+    var scheme;
+    if(flatten) {
+      scheme = o;
+    } else {
+      scheme = o.noScheme;
+    }
     for(i=0; i < attrs.length; i++) {
-      attr = attrs[i]
-      scheme[attr] = element.getAttribute(attr);
+      attr = attrs[i];
+      val = element.getAttribute(attr);
+      if(dropSchemes) {
+        attr = attr.replace(schemeStripRegex, '');
+      }
+      scheme[attr] = val;
     }
     if(!scheme.id) return o;
-
 
     var els = this.doc.querySelectorAll("package > metadata meta[refines=\\#"+scheme.id+"]");
     var el;
     for(i=0; i < els.length; i++) {
       el = els[i];
-      scheme = el.getAttribute('scheme') || 'noScheme';
+      if(!flatten) {
+        scheme = el.getAttribute('scheme') || 'noScheme';
+      }
       attr = el.getAttribute('property');
       if(!attr) continue;
-      
-      if(!o[scheme]) o[scheme] = {};
-      scheme = o[scheme];
+      if(dropSchemes) {
+        attr = attr.replace(schemeStripRegex, '');
+      }
+      if(!flatten) {
+        if(!o[scheme]) o[scheme] = {};
+        scheme = o[scheme];
+      }
       scheme[attr] = el.textContent;
     }
     return o;
   }
 
+  // sort creators by their 'display-seq' property (if any)
+  creatorSort(a, b) {
+    return (parseInt(a['display-seq']) || 0) - (parseInt(b['display-seq']) || 0);
+  }
+  
+  parseCreators() {
+    const creators = {};
+    const els = this.getMetas('dc:creator');
+    var i, el, creator;
+    for(i=0; i < els.length; i++) {
+      el = els[i];
+      creator = this.refineMeta(el, true, true);
+      creator.name = el.textContent;
+      if(!creator.role) creator.role = 'unknown';
+      if(!creators[creator.role]) creators[creator.role] = [];
+      creators[creator.role].push(creator);
+    }
+    var role;
+    for(role in creators) {
+      creators[role] = creators[role].sort(this.creatorSort);
+    }
+    if(creators.unknown && !creators.aut) {
+      creators.aut = creators.unknown;
+      delete creators.unknown;
+    }
+    return creators;
+  }
+  
   // Get the EPUB's UUID
   // and properly formatted ISBN-10 or ISBN-13 (if present)
   // and any other Onix Code List 5 identifiers.
@@ -157,6 +217,9 @@ class OPF {
   //   'DOI': '10.1038/nature04586'
   // }
   parseIdentifiers() {
+    const numbersOnlyRegex = new RegExp(/[^\d]+/g);
+    const isbnRegex = new RegExp(/^isbn/i);
+    
     var el = this.doc.querySelector('package');
     if(!el) return {};
     // The <package unqiue-identifier=''> attribute
@@ -189,7 +252,7 @@ class OPF {
       //
       val = el.getAttribute('opf:scheme');
       if(val && val.toUpperCase() === 'ISBN') {
-        val = el.textContent.replace(/[^\d]+/g, '');
+        val = el.textContent.replace(numbersOnlyRegex, '');
         if(val.length === 10) {
           o['ISBN-10'] = formatISBN(val);
         } else if(val.length === 13) {
@@ -217,7 +280,7 @@ class OPF {
         o[attr] = el.textContent;
         // Try to format ISBNs nicely
         if(attr === 'ISBN-10' || attr === 'ISBN-13') {
-          o[attr] = o[attr].replace(/[^\d]+/g, '');
+          o[attr] = o[attr].replace(numbersOnlyRegex, '');
           o[attr] = formatISBN(o[attr]);
         }
         continue;
@@ -227,8 +290,8 @@ class OPF {
       //
       // <dc:identifier id="isbn9781509830718">9781509830718</dc:identifier>
       //
-      if(attrs['noScheme']['id'].match(/^isbn/i)) {
-        val = el.textContent.replace(/[^\d]+/g, '');
+      if(attrs['noScheme']['id'].match(isbnRegex)) {
+        val = el.textContent.replace(numbersOnlyRegex, '');
         if(val.length === 10) {
           o['ISBN-10'] = formatISBN(val);
         } else if(val.length === 13) {
@@ -312,11 +375,6 @@ class OPF {
     return o;
   }
   
-  parseCreators() {
-    var els = this.doc.querySelectorAll("package > metadata dc:creator");
-    if(!els.length) return;
-  }
-  
   constructor(opfStr) {
     var el;
 
@@ -325,7 +383,9 @@ class OPF {
     
     this.title = this.getMeta('dc:title', true)
     this.identifiers = this.parseIdentifiers();
-    console.log("IDs:", this.identifiers);
+    console.log("IDENTIFIERS:", this.identifiers);
+    this.creators = this.parseCreators();
+    console.log("Creators:", this.creators);
     
     const lang = this.getMeta('dc:language', true)
     if(lang) {

@@ -9,6 +9,11 @@ var app = {
 
 window.app = app;
 
+var baseURI;
+function absoluteURI(relativeURI) {
+  return baseURI + '//' + relativeURI;
+}
+
 // Returns the path to the Package Document (.opf file)
 // for the first representation found in `META-INF/container.xml`
 function readContainerXML(filepath, cb) {
@@ -59,12 +64,12 @@ function readOPF(filepath, path, cb) {
       return cb(err);
     }
     
-
+    cb(null, opf);
     
   });
 }
 
-function parseEpub() {
+function parseEpub(cb) {
 
   var filepath = Fread.uriToPath(window.location.href);
 
@@ -74,14 +79,18 @@ function parseEpub() {
 //  console.log(files);
   
   readContainerXML(filepath, function(err, opfPath) {
-    if(err) return console.error(err);
-
+    if(err) return cb(err);
+    
     console.log("OPF path:", opfPath);
     
-    readOPF(filepath, opfPath, function(err) {
-      if(err) return console.error(err);
+    readOPF(filepath, opfPath, function(err, opf) {
+      if(err) return cb(err);
 
-      // TODO
+      if(opf.coverPage) {
+        window.location = absoluteURI(opf.coverPage);
+      } else {
+        // TODO create cover page
+      }
       
     });
   });
@@ -93,7 +102,9 @@ function renderAll() {
   var container = document.getElementById('container');
   container.innerHTML = '';
 
-  parseEpub();
+  parseEpub(function(err) {
+    if(err) return console.error(err);
+  });
   
   render((
     <Root />
@@ -101,9 +112,14 @@ function renderAll() {
 }
 
 
+
+
 function init() {
 
   app.actions = require('./actions/index');
+
+  baseURI = window.location;
+  console.log("baseURI:", baseURI);
   
   renderAll();
 }

@@ -389,6 +389,19 @@ export default class OPF {
     return o;
   }
 
+
+  // Get the URL for the cover page (if any)
+  //
+  //  <guide>
+  //    <reference href="text/titlepage.xhtml" title="Cover" type="cover"/>
+  //  </guide>
+  //
+  getCoverPage() {
+    const el = this.doc.querySelector("package > guide reference[type=cover]");
+    if(!el) return;
+    return el.getAttribute('href');
+  }
+  
   // Public API below
 
   // Get an array of the authors names, sorted correctly
@@ -482,6 +495,9 @@ export default class OPF {
 
     this.copyright = this.getMeta('dc:rights', true);
     console.log("Copyright:", this.copyright);
+
+    this.coverPage = this.getCoverPage();
+    console.log("Cover page:", this.coverPage);
     
     // TODO get cover (html, not image)
     // TODO get fonts

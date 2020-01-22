@@ -304,7 +304,7 @@ class OPF {
       //
       // <dc:identifier id="isbn9781509830718">9781509830718</dc:identifier>
       //
-      if(attrs['noScheme']['id'].match(isbnRegex)) {
+      if(attrs['noScheme'] && attrs['noScheme']['id'] && attrs['noScheme']['id'].match(isbnRegex)) {
         this.setISBN(o, el.textContent);
       }
       
@@ -429,6 +429,13 @@ class OPF {
     }
     return ret;
   }
+
+  // Will return a properly formatted ISBN if present in the .opf file
+  // Will prefer 13-digit ISBN over 10-digit if both are present
+  getISBN() {
+    return this.identifiers['ISBN-13'] || this.identifiers['ISBN-10']
+  }
+  
   // Throws an exception if XHTML parsing fails
   constructor(opfStr) {
     var el;
@@ -441,6 +448,16 @@ class OPF {
       <meta refines="#pub-title" property="title-type">main</meta>
       <dc:title id="pub-subtitle">Digital Media and Collaborative City-Making in the Network Society</dc:title>
       <meta refines="#pub-subtitle" property="title-type">subtitle</meta>
+
+      or
+
+                <dc:title id="title">The Outlaw Ocean</dc:title>
+                <meta property="title-type" refines="#title">main</meta>
+                <meta property="display-seq" refines="#title">1</meta>
+                <dc:title id="subtitle">Journeys Across the Last Untamed Frontier</dc:title>
+                <meta property="title-type" refines="#subtitle">subtitle</meta>
+                <meta property="display-seq" refines="#subtitle">2</meta>
+
     */
     this.title = this.getMeta('dc:title', true)
     this.description = this.getMeta('dc:description', true)
@@ -472,7 +489,15 @@ class OPF {
     this.coverImage = this.parseCoverImage();
     console.log("COVER:", this.coverImage);
 
+    this.copyright = this.getMeta('dc:rights', true);
+    console.log("Copyright:", this.copyright);
+    
     // TODO get cover (html, not image)
+    // TODO get fonts
+
+    // WTF is this? (from fifth sacred thing)
+    // we should be able to ignore it since it's not a core media type
+    // <item href="OEBPS/page-template.xpgt" id="page" media-type="application/vnd.adobe-page-template+xml"/>
 
     // TODO subject used as tags
     /*

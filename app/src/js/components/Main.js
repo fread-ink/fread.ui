@@ -11,12 +11,11 @@ export default class Main extends Component {
     this.state = {};
   }
 
-
   render() {
     return ((
-    <div>
-      main
-    </div>
+      <div>
+
+      </div>
     ));
   }
   

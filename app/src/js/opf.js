@@ -317,6 +317,71 @@ export default class OPF {
     return o;
   }
 
+  // parse <manifest> <item> elements like:
+  //   <item href="cover.jpeg" id="cover" media-type="image/jpeg" />
+  // into a key value object like:
+  //   {
+  //     'some_id': 'path/to/filename'
+  //   }
+  parseManifest() {
+    const els = this.doc.querySelectorAll("package > manifest item");
+
+    const o = {}
+    var i, el, id, href;
+    for(i=0; i < els.length; i++) {
+      el = els[i];
+      id = el.getAttribute('id');
+      if(!id) continue;
+      href = el.getAttribute('href');
+      if(!href) continue;
+      o[id] = href;
+    }
+    return o;
+  }
+
+  // parse <spine> into, e.g:
+  // {
+  //   toc: 'ncx'
+  //   pageProgressionDirection: 'ltr',
+  //   items: ['path/to/file', 'path/to/other/file']
+  // };
+  //
+  // TODO check <spine> `toc=` and `page-progression-direction=`
+  parseSpine() {
+    const items = this.parseManifest();
+    const spineEl = this.doc.querySelector("package > spine");
+    if(!spineEl) return null;
+    
+    const els = this.doc.querySelectorAll("package > spine itemref");
+
+    const spine = []
+    
+    var i, el, idref, item;
+    for(i=0; i < els.length; i++) {    
+      el = els[i];
+      
+      idref = el.getAttribute('idref');
+      if(!idref) continue;
+
+      if(el.getAttribute('linear') === 'no') {
+        continue;
+      }
+
+      item = items[idref];
+      if(!item) {
+        continue;
+      }
+      
+      spine.push(item);
+    }
+    
+    return {
+      toc: spineEl.getAttribute('toc'),
+      pageProgressionDirection: spineEl.getAttribute('page-progression-direction') || 'ltr',
+      items: spine
+    };
+  }
+  
   // Check if a <manifest> <item> which is supposed to be a cover image
   // is of a supported cover image media-type (e.g. jpg, png, gif, svg).
   // If no media-type attribute is specified then try to match the file extension.
@@ -498,6 +563,10 @@ export default class OPF {
 
     this.coverPage = this.getCoverPage();
     console.log("Cover page:", this.coverPage);
+
+    this.spine = this.parseSpine();
+    console.log("Spine:", this.spine);
+
     
     // TODO get cover (html, not image)
     // TODO get fonts

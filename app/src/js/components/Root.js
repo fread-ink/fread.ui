@@ -11,14 +11,13 @@ export default class Root extends Component {
     super();
     var app = window.app;
     
-    this.state = {
-      status: 'LOADING'
-    }
-    
+    app.state = {
+      status: ''
+    }    
   }
   
   componentDidMount() {
-
+    
   }
 
   render(props, state) {

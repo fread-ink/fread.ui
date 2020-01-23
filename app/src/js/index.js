@@ -52,6 +52,18 @@ function readContainerXML(filepath, cb) {
 }
 
 
+function navigateForward() {
+
+}
+
+function navigateBackward() {
+
+}
+
+function navigate(index) {
+
+}
+
 
 function readOPF(filepath, path, cb) {
   
@@ -64,8 +76,7 @@ function readOPF(filepath, path, cb) {
       return cb(err);
     }
     
-    cb(null, opf);
-    
+    cb(null, opf);    
   });
 }
 
@@ -85,11 +96,11 @@ function parseEpub(cb) {
     
     readOPF(filepath, opfPath, function(err, opf) {
       if(err) return cb(err);
-
+      
       if(opf.coverPage) {
         window.location = absoluteURI(opf.coverPage);
       } else {
-        // TODO create cover page
+        window.location = absoluteURI(opf.spine.items[0]);
       }
       
     });

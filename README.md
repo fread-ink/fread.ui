@@ -325,6 +325,10 @@ E.g:
 
 Some of these are actually in normal CSS without the `-epub-` prefix, e.g. `ruby-position`.
 
+## EPUB Adaptive Layout 
+
+It seems like this was never really adopted and few readers support it. It does not seem worth the trouble to implement. A [javascript](https://github.com/sorotokin/adaptive-layout) implementation exists and another one in [typescript in Vivliostyle](https://vivliostyle.org/). Vivliostyle has a notice that they may drop support in the future. It seems like this is a dead standard.
+
 ## Javascript
 
 If the user wants to turn on javascript (we should keep it default off) we need to provide [this special object](http://idpf.org/epub/301/spec/epub-contentdocs.html#app-epubReadingSystem).

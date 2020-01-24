@@ -6,9 +6,11 @@ $white: rgba(220,220,220,1);
 
 body {
     font-family: sans-serif;
-    margin: 20px;
+    margin: 0;
+    padding: 0;
     background: rgba(0,0,0,1);
     color: $white;
+    overflow: hidden;
 }
 
 .noselect {
@@ -26,3 +28,23 @@ h1 {
     font-size: 1.2em;
 }
 
+#container {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+#iframe {
+    display: block;
+    position: absolute;
+    top: 50px;
+    left: -500px;
+    width: 10000px;
+    height: 600px;
+    border-style: solid; 
+    border-width: 4;
+    border-color: red;
+
+}

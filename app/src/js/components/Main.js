@@ -8,14 +8,15 @@ export default class Main extends Component {
     super();
     var app = window.app;
     
-    this.state = {};
+    this.state = {
+      
+    };
   }
 
-  render() {
-    return ((
-      <div>
+  render(props) {
 
-      </div>
+    return ((
+      <iframe id="iframe" src={props.uri} scrolling="no"></iframe>
     ));
   }
   

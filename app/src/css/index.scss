@@ -28,23 +28,34 @@ h1 {
     font-size: 1.2em;
 }
 
+/* the outermost container in <body> */
 #container {
     display: block;
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    right: 0;
+    bottom: 0;
 }
+
+/* a <div> around the <iframe> */
+#iframe-container {
+    display: block;
+    position: fixed;
+    top: 50px;
+    left: 50px;
+    right: 50px;
+    bottom: 50px;
+}
+
 
 #iframe {
     display: block;
     position: absolute;
-    top: 50px;
-    left: -500px;
+    top: 0;
+    left: 0;
+    height: 100%;
     width: 10000px;
-    height: 600px;
-    border-style: solid; 
-    border-width: 4;
-    border-color: red;
-
+    border-style: none; 
+    border-width: 0;
 }

@@ -17,7 +17,13 @@ export default class Root extends Component {
       status: '',
       uri: '',
       baseuri: props.baseuri
-    }    
+    }
+
+    // tracks which keys are currently pressed
+    this.keysDown = {};
+    
+    this.onkeydownBound = this.onkeydown.bind(this);
+    this.onkeyupBound = this.onkeyup.bind(this);
   }
   
   absoluteURI(relativeURI) {
@@ -110,22 +116,91 @@ export default class Root extends Component {
     }.bind(this))  
   }
 
-  iframeLoaded() {
-    this.iDoc = document.getElementById('iframe').contentDocument;
-    console.log("-----", this.iDoc);
-//    this.iDoc.body.style.width = '300px';
-    this.iDoc.body.style.columnWidth = '500px';
+  // Go to page number relative to current page
+  // or absolute page number if isAbs is true.
+  // E.g. gotoPage(-1) goes to the previous page
+  gotoPage(page, isAbs) {
+    // TODO use preact ref API
+    const idiv = document.getElementById('iframe-container');
+    console.log("www", idiv.offsetWidth);
+    this.iframe.style.left = this.iframe.offsetLeft - idiv.offsetWidth + 'px';
+  }
+  
+  onkeydown(e) {
+
+    switch(e.keyCode) {
+      
+    case 32: // space
+    case 39: // right arrow
+
+      if(this.keysDown[e.keyCode]) break;
+      this.keysDown[e.keyCode] = true;
+      this.gotoPage(1);
+      break;
+    case 37: // left arrow
+      if(this.keysDown[e.keyCode]) break;
+      this.keysDown[e.keyCode] = true;
+      this.gotoPage(-1);
+    }
     
   }
 
+  onkeyup(e) {
+    switch(e.keyCode) {
+      
+    case 32: // space
+    case 39: // right arrow
+    case 37: // left arrow
+      
+      if(!this.keysDown[e.keyCode]) break;
+      delete this.keysDown[e.keyCode]
+    }
 
-
+  }
+  
+  
   componentDidMount() {
     this.parseEpub(function(err) {
       if(err) return console.error(err);
     });
+
+    this.iframe = document.getElementById('iframe');
+    document.addEventListener('keydown', this.onkeydownBound);
+    document.addEventListener('keyup', this.onkeyupBound)
   }
 
+  componentWillUnmount() {
+    document.removeEventListener('keydown', this.onkeydownBound);
+    document.removeEventListener('keyup', this.onkeyupBound);
+    if(this.iDoc) {
+      this.iDoc.removeEventListener('keyup', this.onkeyupBound);
+    }
+  }
+
+  onResize() {
+
+    // TODO
+    // inject CSS document instead
+    // With !important on all of these
+    const el = document.getElementById('iframe-container');
+    this.iDoc.body.style.columnWidth = (el.offsetWidth) + 'px';
+    this.iDoc.body.style.height = '100%';
+    
+    // Get the width of the <body> of the document inside the iframe
+    // and resize the iframe to make it fit
+    const range = document.createRange();
+    range.selectNodeContents(this.iDoc.body);
+    this.iframe.style.width = range.getBoundingClientRect().width + 100 + 'px'
+  }
+
+  iframeLoaded() {
+    this.iDoc = document.getElementById('iframe').contentDocument;
+    this.iDoc.addEventListener('keydown', this.onkeydownBound);
+    this.iDoc.addEventListener('keyup', this.onkeyupBound);
+    
+    this.onResize();
+  }
+  
   render(props, state) {
 
     if(this.state.status == 'LOADING') {
@@ -135,7 +210,9 @@ export default class Root extends Component {
     }
     
     return (
-        <iframe id="iframe" src={this.state.uri} scrolling="no" onload={this.iframeLoaded}></iframe>
+      <div id="iframe-container">
+        <iframe id="iframe" src={this.state.uri} scrolling="no" onload={this.iframeLoaded.bind(this)}></iframe>
+      </div>
     );
 
   }

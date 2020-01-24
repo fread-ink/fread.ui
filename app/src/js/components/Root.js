@@ -121,11 +121,14 @@ export default class Root extends Component {
   // E.g. gotoPage(-1) goes to the previous page
   gotoPage(page, isAbs) {
     // TODO use preact ref API
-    const idiv = document.getElementById('iframe-container');
-    console.log("www", idiv.offsetWidth);
-    this.iframe.style.left = this.iframe.offsetLeft - idiv.offsetWidth + 'px';
+    const iDiv = document.getElementById('iframe-container');
+
+//    console.log('scroll:', this.iWin.scrollY, iDiv.offsetHeight);
+//    this.iDoc.body.style.height = (this.iDoc.body.offsetHeight + iDiv.offsetHeight) + 'px';
+    this.iWin.scrollTo(0, this.iWin.scrollY + iDiv.offsetHeight);
+    this.hideHalfShownLines()
   }
-  
+
   onkeydown(e) {
 
     switch(e.keyCode) {
@@ -183,20 +186,103 @@ export default class Root extends Component {
     // inject CSS document instead
     // With !important on all of these
     const el = document.getElementById('iframe-container');
-    this.iDoc.body.style.columnWidth = (el.offsetWidth) + 'px';
-    this.iDoc.body.style.height = '100%';
+//    this.iDoc.body.style.columnWidth = (el.offsetWidth) + 'px';
+//    this.iDoc.body.style.height = '100%';
     
     // Get the width of the <body> of the document inside the iframe
     // and resize the iframe to make it fit
     const range = document.createRange();
     range.selectNodeContents(this.iDoc.body);
-    this.iframe.style.width = range.getBoundingClientRect().width + 100 + 'px'
+//    this.iframe.style.width = range.getBoundingClientRect().width + 100 + 'px'
   }
 
+  isPartiallyInView(el) {
+
+    var rect;
+    if(el.getBoundingClientRect) {
+      rect = el.getBoundingClientRect();
+
+    } else {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      rect = range.getBoundingClientRect();
+    }
+    const bottom = document.getElementById('iframe').offsetHeight;
+
+    if(rect.top < bottom && rect.bottom > bottom) {
+      console.log("Debug:", bottom, rect.top, rect.bottom, el);
+      document.getElementById('debugger').style.height = (rect.top) + 'px';
+      return 0;
+    } else if(rect.top > bottom) {
+      return 1;
+    } else {
+      return -1
+    }
+  }
+
+  hideHalfShownLines() {
+    const iframe = document.getElementById('iframe')
+    var i, cur, found;
+    for(i=0; i < 2000; i++) { // TODO find real max
+      cur = this.walker.currentNode;
+      if(cur.nodeName !== '#text') {
+        this.walker.nextNode();
+        continue;
+      }
+      const inView = this.isPartiallyInView(cur);
+      if(inView == 0) {
+//        console.log("Node:", cur);
+        const range = document.createRange();
+        range.selectNodeContents(cur);
+        var rect;
+        var lastTop = -1;
+
+        // TODO what if there is only a single character?
+        while(range.startOffset < range.endOffset) {
+          rect = range.getBoundingClientRect();
+
+          if(rect.top > (iframe.offsetHeight)) {
+
+            console.log('FOUND!', rect.top, iframe.offsetHeight);
+
+
+            document.getElementById('bottom-hider').style.height = (iframe.offsetHeight - lastTop + 1) + 'px';
+            
+            found = true;
+            break;
+          }
+          lastTop = rect.top;
+          range.setStart(cur, range.startOffset + 1);
+        }
+        // If the last line of the text element is the one being cut off
+        // then we just use the bottom of the last rect
+        if(!found) {
+          document.getElementById('bottom-hider').style.height = (iframe.offsetHeight - lastTop + 1) + 'px';
+        }
+
+      }
+      if(found) break;
+      this.walker.nextNode();
+
+      // We went too far
+      if(inView == 1) {
+        this.walker.previousNode();
+        break;
+      }
+    }
+    if(!found) console.log("NOTHING");
+  }
+  
   iframeLoaded() {
-    this.iDoc = document.getElementById('iframe').contentDocument;
+    const iframe = document.getElementById('iframe')
+    this.iWin = iframe.contentWindow;
+    this.iDoc = iframe.contentDocument;
     this.iDoc.addEventListener('keydown', this.onkeydownBound);
     this.iDoc.addEventListener('keyup', this.onkeyupBound);
+
+    this.walker = this.iDoc.createTreeWalker(this.iDoc, NodeFilter.SHOW_TEXT); 
+
+    this.hideHalfShownLines()
     
     this.onResize();
   }

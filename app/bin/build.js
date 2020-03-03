@@ -82,7 +82,12 @@ function build(opts) {
 
   b.transform('babelify', {
     presets: [
-      'es2015'
+      ['@babel/preset-env',
+       {
+        targets: {
+          safari: 'tp', // safari version: technology preview
+        }
+      }]
     ],
     plugins: [
       ['transform-react-jsx', {pragma: 'h'}]

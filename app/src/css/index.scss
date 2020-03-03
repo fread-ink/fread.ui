@@ -49,17 +49,6 @@ h1 {
     z-index: 1000;
 }
 
-#bottom-hider {
-    position: fixed;
-    display: block;
-/*    background-color: black;  */
-    border-top: 1px solid red;  
-    left: 0;
-    right: 0;
-    bottom: 50px;
-    height: 0;
-    z-index: 1000;
-}
 
 /* a <div> around the <iframe> */
 #iframe-container {
@@ -72,13 +61,12 @@ h1 {
 }
 
 
-#iframe {
+#page {
     display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    border-style: none; 
-    border-width: 0;
+    position: fixed;
+    top: 50px;
+    left: 200px;
+    right: 200px;
+    bottom: 50px;
+    background-color: #BBBBBB;
 }

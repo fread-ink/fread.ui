@@ -203,7 +203,7 @@ export default class OPF {
       title = this.refineMeta(el, true, true);
       if(!title['title-type']) {
         if(!titles.main) {
-          tiles.main = el.textContent;
+          titles.main = el.textContent;
         }
       } else {
         titles[title['title-type']] = el.textContent;
@@ -224,7 +224,7 @@ export default class OPF {
       creators[creator.role].push(creator);
     }
     var role;
-    for(role of creators) {
+    for(role in creators) {
       creators[role] = creators[role].sort(this.creatorSort);
     }
     if(creators.unknown && !creators.aut) {
@@ -563,25 +563,6 @@ export default class OPF {
 
     this.doc = parseXHTML(opfStr);
 
-    // TODO there can be more than one title.
-    // We should at least handle sub-titles, e.g:
-    
-    /*
-      <dc:title id="pub-title">The Hackable City</dc:title>
-      <meta refines="#pub-title" property="title-type">main</meta>
-      <dc:title id="pub-subtitle">Digital Media and Collaborative City-Making in the Network Society</dc:title>
-      <meta refines="#pub-subtitle" property="title-type">subtitle</meta>
-
-      or
-
-                <dc:title id="title">The Outlaw Ocean</dc:title>
-                <meta property="title-type" refines="#title">main</meta>
-                <meta property="display-seq" refines="#title">1</meta>
-                <dc:title id="subtitle">Journeys Across the Last Untamed Frontier</dc:title>
-                <meta property="title-type" refines="#subtitle">subtitle</meta>
-                <meta property="display-seq" refines="#subtitle">2</meta>
-
-    */
     this.titles = this.getTitles();
     this.title = this.titles.main;
     this.subtitle = this.titles.subtitle;

@@ -38,7 +38,7 @@ GBytes* uri_scheme_ebook_load_file(const char* path) {
 
   GBytes* bytes;
   g_autoptr (GFile) file = NULL;
-  
+
   file = g_file_new_for_path(path);
   
   bytes = g_file_load_bytes(file, NULL, NULL, NULL);
@@ -160,6 +160,8 @@ static void uri_scheme_ebook_handler(GTask*        task,
     return;
   }
 
+  printf("Fetching URI: %s\n", uri);
+  
   // strip anchor (if present)
   uri_len = strlen(uri);
   anchor = g_strstr_len(uri, uri_len, "#");

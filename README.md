@@ -1,7 +1,7 @@
 
 fread.ui is work-in-progress ebook reader, web browser and primary UI for the [fread.ink](https://fread.ink) GNU/Linux distro for e-paper devices.
 
-fread.ui aims to be run well on a system with 256 of total memory while providing all the advanced text rendering options expected of a modern ebook reader (using webkit). To compare, all Kindle models starting with the 3rd generation have 256 MB of ram or more.
+fread.ui aims to run well on a system with 256 MB of total memory while providing all the advanced text rendering options expected of a modern ebook reader (using webkit). To compare, all Kindle models starting with the 3rd generation have 256 MB of ram or more.
 
 So far fread.ui supports no ebook formats with EPUB support in progress.
 
@@ -47,13 +47,17 @@ For more info on developing the web app see `app/README.md`.
 
 # Implementation
 
-fread.ui is implemented as a combination of a custom URI scheme, a WebKit Web Process Extension and a minimal web app application that uses preact. This is all on top of WebKit2GTK.
+fread.ui is implemented as a combination of a custom URI scheme, a WebKit Web Process Extension and a minimal web application that uses preact. This is all on top of WebKit2GTK.
 
 The custom URI scheme allows opening of EPUB files using e.g. `ebook://path/to/my/book.epub` and also allows browsing of the files contained in a zip archive (epub uses zip) using the syntax `ebook://path/to/my/book.epub//internal/zip/archive/file.htm`. 
 
-The Web Process Extension adds a global `Fread` javascript object which allows calling a set of C functions from javascript. Currently these add filesystem utility functions such as `Fread.zip_ls` which lists the files in a zip file residing on the filesystem. In the future this will include functions for updating the electronic paper display. The API can glarked from `web_extensions/fread.js`.
+The Web Process Extension adds a global `Fread` javascript object which allows calling a set of C functions from javascript. Currently these add filesystem utility functions such as `Fread.zip_ls` which lists the files in a zip file residing on the filesystem. In the future this will include functions for updating the electronic paper display. The API can be glarked from `web_extensions/fread.js`.
 
 The web app provides parsing of the various EPUB-specific metadata formats and rendering of that metadata into something presentable to the user. It is located in `app/`.
+
+## Pagination
+
+Splitting the ebook up into individual pages is handled by the [ebook-paginator](https://github.com/fread-ink/ebook-paginator) library.
 
 # APIs and manuals
 
@@ -323,7 +327,13 @@ E.g:
   -epub-ruby-position 
 ```
 
+These are specified [here](https://w3c.github.io/publ-epub-revision/epub32/spec/epub-contentdocs.html#sec-css-prefixed). They are included in EPUB 3.2 but discouraged from use. 
+
 Some of these are actually in normal CSS without the `-epub-` prefix, e.g. `ruby-position`.
+
+If we want to support -epub-* CSS properties we can use [postcss-epub](https://github.com/Rycochet/postcss-epub) but a simpler solution would be to remove the "-epub-" prefix from all of these before handing them to the browser. We should check if PostCSS can do this in javascript without being a memory hog and if not then we should find a CSS parsing library in C and implement it during loading of the CSS file from the .epub file.
+
+The [MyCSS](https://github.com/lexborisov/mycss) CSS parser (written in C) could be used. It looks like the current codebase is only maintained as part of [Modest](https://github.com/lexborisov/Modest). There is also [a python binding](https://github.com/rushter/selectolax).
 
 ## EPUB Adaptive Layout 
 
@@ -344,6 +354,8 @@ WebKit only has a bit of MathML support.
 We could use [MathJax](https://www.mathjax.org/) to render MathML in javascript but the ram usage jumps to 170 MB (PSS) or 280 MB (RSS) when loading the MathJax sample page, which is only rendering a few formulas.
 
 [Lasem](https://wiki.gnome.org/Projects/Lasem) but it's unclear how complete it is. It can render to SVG or PNG so we could just pull MathML html nodes using javascript, pass them to Lasem and take back the SVG or image data and replace in the DOM. It might also be possible to do all this without javascript.
+
+After tring Lasem on the [Mozilla MathML Torture tests](https://mdn.mozillademos.org/en-US/docs/Mozilla/MathML_Project/MathML_Torture_Test$samples/MathML_Torture_Test?revision=1506691), it seems to do pretty well. The only problems I noticed was that the horizontal brackets not spanning correctly on tests 19 and 22.
 
 KOReader also does not have MathML support so we can't use the same code.
 

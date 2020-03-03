@@ -173,13 +173,50 @@ export default class OPF {
   creatorSort(a, b) {
     return (parseInt(a['display-seq']) || 0) - (parseInt(b['display-seq']) || 0);
   }
+
+  // There is often at least a main title and a sub-title
+  // in one of the two forms:
+  //   <dc:title id="pub-title">Some title</dc:title>
+  //   <meta refines="#pub-title" property="title-type">main</meta>
+  //   <dc:title id="pub-subtitle">Some sub-title</dc:title>
+  //   <meta refines="#pub-subtitle" property="title-type">subtitle</meta>
+  // or:
+  //   <dc:title title-type="main">Some title</dc:title>  
+  //   <dc:title title-type="subtitle">Some sub=title</dc:title>
+  // or just:
+  //    <dc:title>Some title</dc:title>  
+  //
+  // This function returns titles and sub-titles in the form:
+  // {
+  //   main: "Some title",
+  //   subtitle: "Some sub-title"
+  // }
+  //
+  // If there is no main title then the first title without a title-type
+  // will be assumed to have the title-type 'main'
+  //
+  getTitles() {
+    const titles = {};
+    const els = this.getMetas('dc:title');
+    var el, title;
+    for(el of els) {
+      title = this.refineMeta(el, true, true);
+      if(!title['title-type']) {
+        if(!titles.main) {
+          tiles.main = el.textContent;
+        }
+      } else {
+        titles[title['title-type']] = el.textContent;
+      }
+    }
+    return titles;
+  }
   
   parseCreators() {
     const creators = {};
     const els = this.getMetas('dc:creator');
-    var i, el, creator;
-    for(i=0; i < els.length; i++) {
-      el = els[i];
+    var el, creator;
+    for(el of els) {
       creator = this.refineMeta(el, true, true);
       creator.name = el.textContent;
       if(!creator.role) creator.role = 'unknown';
@@ -187,7 +224,7 @@ export default class OPF {
       creators[creator.role].push(creator);
     }
     var role;
-    for(role in creators) {
+    for(role of creators) {
       creators[role] = creators[role].sort(this.creatorSort);
     }
     if(creators.unknown && !creators.aut) {
@@ -504,6 +541,21 @@ export default class OPF {
   getISBN() {
     return this.identifiers['ISBN-13'] || this.identifiers['ISBN-10']
   }
+
+  debug() {
+    console.log("Description:", this.description);
+    console.log("Publication date:", this.publicationDate);
+    console.log("Publisher:", this.publisher);
+    console.log("Identifiers:", this.identifiers);
+    console.log("Creators:", this.creators);
+    console.log("Authors:", this.authors);
+    console.log("Authors for filing:", this.authorsForFiling);
+    console.log("Language:", this.language);
+    console.log("Cover image:", this.coverImage);
+    console.log("Copyright:", this.copyright);
+    console.log("Cover page:", this.coverPage);
+    console.log("Spine:", this.spine);
+  }
   
   // Throws an exception if XHTML parsing fails
   constructor(opfStr) {
@@ -511,7 +563,9 @@ export default class OPF {
 
     this.doc = parseXHTML(opfStr);
 
-    // TODO there can be more than one title, e.g:
+    // TODO there can be more than one title.
+    // We should at least handle sub-titles, e.g:
+    
     /*
       <dc:title id="pub-title">The Hackable City</dc:title>
       <meta refines="#pub-title" property="title-type">main</meta>
@@ -528,9 +582,11 @@ export default class OPF {
                 <meta property="display-seq" refines="#subtitle">2</meta>
 
     */
-    this.title = this.getMeta('dc:title', true)
-    this.description = this.getMeta('dc:description', true)
-    console.log("description:", this.description);
+    this.titles = this.getTitles();
+    this.title = this.titles.main;
+    this.subtitle = this.titles.subtitle;
+
+    this.description = this.getMeta('dc:description', true);
 
     // TODO see the fucked up description in
     // Glass_and_Gardens__Solarpunk_Su_Sarena_Ulibarri.epub
@@ -539,36 +595,23 @@ export default class OPF {
     if(this.publicationDate) {
       this.publicationDate = new Date(this.publicationDate);
     }
-    console.log("publication date:", this.publicationDate);
-    this.publisher = this.getMeta('dc:publisher', true)
-    console.log("publisher:", this.publisher);
+
+    this.publisher = this.getMeta('dc:publisher', true);
     this.identifiers = this.parseIdentifiers();
-    console.log("IDENTIFIERS:", this.identifiers);
     this.creators = this.parseCreators();
-    console.log("Creators:", this.creators);
-    console.log("Authors:", this.getAuthors());
-    console.log("Authors for filing:", this.getAuthors(true));
+    this.authors = this.getAuthors();
+    this.authorsForFiling = this.getAuthors(true);
     
-    const lang = this.getMeta('dc:language', true)
+    const lang = this.getMeta('dc:language', true);
     if(lang) {
       this.language = parseLanguage(lang);
     }
-    console.log("Language:", this.language);
     
     this.coverImage = this.parseCoverImage();
-    console.log("COVER:", this.coverImage);
-
     this.copyright = this.getMeta('dc:rights', true);
-    console.log("Copyright:", this.copyright);
-
     this.coverPage = this.getCoverPage();
-    console.log("Cover page:", this.coverPage);
-
     this.spine = this.parseSpine();
-    console.log("Spine:", this.spine);
 
-    
-    // TODO get cover (html, not image)
     // TODO get fonts
 
     // WTF is this? (from fifth sacred thing)

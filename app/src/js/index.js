@@ -7,11 +7,6 @@ var app = {
 
 window.app = app;
 
-
-
-
-
-
 function init() {
 
   app.actions = require('./actions/index');

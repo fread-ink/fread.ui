@@ -12,6 +12,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "ebook-paginator": "git+https://github.com/fread-ink/ebook-paginator",
     "@cospired/i18n-iso-languages": "^2.1.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",

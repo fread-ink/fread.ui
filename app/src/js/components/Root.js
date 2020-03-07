@@ -1,3 +1,4 @@
+'use strict';
 
 import { h, render, Component } from 'preact';
 //import Router from 'preact-router';
@@ -7,8 +8,6 @@ const SpinePaginator = require('../spine_paginator.js');
 import Loading from './Loading.js';
 import OPF from '../opf.js';
 import {parseDOM, parseXML, parseXHTML} from '../parse_dom.js';
-
-
 
 export default class Root extends Component {
 
@@ -93,14 +92,8 @@ export default class Root extends Component {
   async parseEpub(cb) {
 
     var filepath = Fread.uriToPath(window.location.href);
-
-    //  console.log(filepath);
-    
-    //  var files = Fread.open_epub(filepath);
-    //  console.log(files);
     
     const opfPath = await this.readContainerXML(filepath);
-    console.log("OPF path:", opfPath);
       
     return await this.readOPF(filepath, opfPath);
   }
@@ -114,12 +107,13 @@ export default class Root extends Component {
 
       if(this.keysDown[e.keyCode]) break;
       this.keysDown[e.keyCode] = true;
-      this.gotoPage(1);
+      this.paginator.nextPage();
       break;
     case 37: // left arrow
       if(this.keysDown[e.keyCode]) break;
       this.keysDown[e.keyCode] = true;
-      this.gotoPage(-1);
+      this.paginator.prevPage();
+      break;
     }
     
   }
@@ -160,7 +154,7 @@ export default class Root extends Component {
     const pageElementID = "page";
 
 
-    const paginator = new SpinePaginator(pageElementID, opf.spine.items, {
+    this.paginator = new SpinePaginator(pageElementID, opf.spine.items, {
       columnLayout: false,
       repeatTableHeader: false,
       cacheForwardPagination: false,
@@ -170,7 +164,7 @@ export default class Root extends Component {
       baseURI: document.baseURI + '//'
     });
     
-    await paginator.load(curURI);
+    await this.paginator.load(curURI);
     
     document.addEventListener('keydown', this.onkeydownBound);
     document.addEventListener('keyup', this.onkeyupBound)

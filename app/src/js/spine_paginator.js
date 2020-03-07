@@ -1,3 +1,5 @@
+'use strict';
+
 const Paginator = require('ebook-paginator');
 
 // An ebook's spine is an array of html files
@@ -29,7 +31,7 @@ class SpinePaginator {
       return false;
     }
     this.spineIndex++;
-    return await this.load(this.spine[this.spineIndex]);
+    return await this.load(this.spineIndex);
   }
 
   async prevSpineItem() {
@@ -39,11 +41,9 @@ class SpinePaginator {
       uri = this.preSpineURI;
     } else if(this.spineIndex < 0) {
       return false;
-    } else {
-      uri = this.spine[this.spineIndex]
     }
 
-    return await this.load(uri);
+    return await this.load(uri || this.spineIndex);
   }
 
   // Load an html file and begin paginating
@@ -56,7 +56,7 @@ class SpinePaginator {
 
     // uri is an index into the spine array
     if(typeof uri === 'number') {
-      uri = this.spine[i];
+      uri = this.spine[uri];
       if(!uri) throw new Error("Invalid URI or spine index");
       
     } else { // uri is a string
@@ -69,7 +69,7 @@ class SpinePaginator {
           break;
         }
       }
-      if(this.spineIndex = -1) {
+      if(this.spineIndex === -1) {
         this.preSpineURI = uri;
       }
     }
@@ -98,6 +98,7 @@ class SpinePaginator {
   }
 
   async nextPage() {
+    this.onFirstPage = false;
     if(this.onLastPage) {
       return await this.nextSpineItem();
     }
@@ -116,12 +117,12 @@ class SpinePaginator {
     }
     const ret = await this.paginator.prevPage();
     if(!ret) {
-      this.onPrevPage = true;
+      this.onLastPage = true;
       if(ret === undefined) {
         this.onFirstPage = true;
       }
     } else {
-      this.onPrevPage = false;      
+      this.onLastPage = false;      
     }
     return ret;
   }  

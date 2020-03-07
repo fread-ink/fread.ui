@@ -1,3 +1,5 @@
+'use strict';
+
 import {h, render, Component} from 'preact';
 import Root from './components/Root.js';
 

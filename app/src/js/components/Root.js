@@ -3,7 +3,7 @@ import { h, render, Component } from 'preact';
 //import Router from 'preact-router';
 //import { route } from 'preact-router';
 //import Main from './Main.js';
-const Paginator = require('ebook-paginator');
+const SpinePaginator = require('../spine_paginator.js');
 import Loading from './Loading.js';
 import OPF from '../opf.js';
 import {parseDOM, parseXML, parseXHTML} from '../parse_dom.js';
@@ -148,7 +148,7 @@ export default class Root extends Component {
     var curURI;
     
     if(opf.coverPage) {
-      curURI = this.absoluteURI(opf.coverPage)
+      curURI = opf.coverPage
     } else {
       curURI = opf.spine.items[0]
     }
@@ -158,12 +158,13 @@ export default class Root extends Component {
     });
     
     const pageElementID = "page";
-    
-    const paginator = new Paginator(pageElementID, {
+
+
+    const paginator = new SpinePaginator(pageElementID, opf.spine.items, {
       columnLayout: false,
       repeatTableHeader: false,
       cacheForwardPagination: false,
-      loadScripts: true,
+      loadScripts: false,
       detectEncoding: true,
       preprocessCSS: true,
       baseURI: document.baseURI + '//'
@@ -173,6 +174,7 @@ export default class Root extends Component {
     
     document.addEventListener('keydown', this.onkeydownBound);
     document.addEventListener('keyup', this.onkeyupBound)
+
   }
 
   componentWillUnmount() {

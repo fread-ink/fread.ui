@@ -35,14 +35,15 @@ class SpinePaginator {
   }
 
   async prevSpineItem() {
-    this.spineIndex--;
     var uri;
-    if(this.spineIndex === -1 && this.preSpineURI) {
+    if(this.spineIndex === 0 && this.preSpineURI) {
       uri = this.preSpineURI;
-    } else if(this.spineIndex < 0) {
+      this.spineIndex = -1;
+    } else if(this.spineIndex <= 0) {
       return false;
     }
 
+    this.spineIndex--;
     return await this.load(uri || this.spineIndex);
   }
 

@@ -85,10 +85,8 @@ man libmagic
 
 # ToDo
 
-* Implement .opf parsing and rendering
-* Implement CFI parsing and link following
-* Show front page of books
-* Pagination
+* Integrate CFI parsing and link following
+* Render table of contents
 * Configuration file for setting keyboard shortcuts
 * Change existing jsc filesystem functions to async
 * Add setting to let user enable: process-swap-on-cross-site-navigation-enabled
@@ -353,7 +351,7 @@ WebKit only has a bit of MathML support.
 
 We could use [MathJax](https://www.mathjax.org/) to render MathML in javascript but the ram usage jumps to 170 MB (PSS) or 280 MB (RSS) when loading the MathJax sample page, which is only rendering a few formulas.
 
-[Lasem](https://wiki.gnome.org/Projects/Lasem) but it's unclear how complete it is. It can render to SVG or PNG so we could just pull MathML html nodes using javascript, pass them to Lasem and take back the SVG or image data and replace in the DOM. It might also be possible to do all this without javascript.
+We could use [Lasem](https://wiki.gnome.org/Projects/Lasem) but it's unclear how complete it is. It can render to SVG or PNG so we could just pull MathML html nodes using javascript, pass them to Lasem and take back the SVG or image data and replace in the DOM. It might also be possible to do all this without javascript.
 
 After tring Lasem on the [Mozilla MathML Torture tests](https://mdn.mozillademos.org/en-US/docs/Mozilla/MathML_Project/MathML_Torture_Test$samples/MathML_Torture_Test?revision=1506691), it seems to do pretty well. The only problems I noticed was that the horizontal brackets not spanning correctly on tests 19 and 22.
 

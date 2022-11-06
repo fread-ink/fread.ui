@@ -21,7 +21,7 @@
     "browserify": "^14.4.0",
     "byline": "^5.0.0",
     "ebook-paginator": "git+https://github.com/fread-ink/ebook-paginator.git",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "gulp-cssimport": "^6.0.0",
     "gulp-inline-source": "^3.1.0",
     "gulp-sass": "^3.1.0",
